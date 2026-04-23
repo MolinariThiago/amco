@@ -1,21 +1,17 @@
 {
   "version": 2,
-  "rewrites": [
+  "routes": [
     {
-      "source": "/api/:path*",
-      "destination": "https://amco-production.up.railway.app/api/:path*"
+      "src": "/api/(.*)",
+      "dest": "https://amco-production.up.railway.app/api/$1"
     },
     {
-      "source": "/admin",
-      "destination": "/admin/index.html"
+      "src": "/admin(.*)",
+      "dest": "/admin$1"
     },
     {
-      "source": "/admin/:path*",
-      "destination": "/admin/:path*"
-    },
-    {
-      "source": "/((?!admin|api|css|js).*)",
-      "destination": "/public/index.html"
+      "src": "/(.*)",
+      "dest": "/$1"
     }
   ]
 }
