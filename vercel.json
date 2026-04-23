@@ -4,6 +4,18 @@
     {
       "source": "/api/:path*",
       "destination": "https://amco-production.up.railway.app/api/:path*"
+    },
+    {
+      "source": "/admin",
+      "destination": "/admin/index.html"
+    },
+    {
+      "source": "/admin/:path*",
+      "destination": "/admin/:path*"
+    },
+    {
+      "source": "/((?!admin|api|css|js).*)",
+      "destination": "/public/index.html"
     }
   ]
 }
