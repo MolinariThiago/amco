@@ -6,8 +6,16 @@
       "dest": "https://amco-production.up.railway.app/api/$1"
     },
     {
+      "src": "/admin/css/(.*)",
+      "dest": "/admin/css/$1"
+    },
+    {
+      "src": "/admin/js/(.*)",
+      "dest": "/admin/js/$1"
+    },
+    {
       "src": "/admin(.*)",
-      "dest": "/admin$1"
+      "dest": "/admin/index.html"
     },
     {
       "src": "/(.*)",
