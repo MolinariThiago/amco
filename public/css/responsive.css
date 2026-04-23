@@ -1,0 +1,204 @@
+/* ═══════════════════════════════════════
+   AMCO — Responsive Breakpoints
+   1024px · 768px · 480px
+═══════════════════════════════════════ */
+
+/* ── Tablet (≤ 1024px) ─────────────── */
+@media (max-width: 1024px) {
+
+  .services__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .steps {
+    grid-template-columns: repeat(2, 1fr);
+    gap: 40px;
+  }
+
+  .steps::before { display: none; }
+
+  .reviews__grid {
+    grid-template-columns: repeat(2, 1fr);
+  }
+
+  .footer__top {
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .hero__stats {
+    bottom: 32px;
+  }
+
+  .stat { padding: 0 20px; }
+  .stat:first-child { padding-left: 0; }
+  .stat__num { font-size: 28px; }
+}
+
+/* ── Mobile (≤ 768px) ──────────────── */
+@media (max-width: 768px) {
+
+  /* Header */
+  .nav { display: none; }
+  .hamburger { display: flex; }
+
+  /* Hero */
+  .hero__stats { display: none; }
+  .hero__content { padding: 0 5%; }
+  .hero__sub { font-size: 16px; }
+
+  /* About */
+  .about {
+    grid-template-columns: 1fr;
+    gap: 40px;
+    padding: var(--space-20) 5%;
+  }
+
+  .about__images { height: 340px; }
+
+  .about__img-main {
+    width: 80%;
+    height: 88%;
+  }
+
+  .about__img-accent {
+    width: 55%;
+    height: 58%;
+  }
+
+  .about__badge {
+    left: -8px;
+    bottom: 16px;
+  }
+
+  /* Services */
+  .services {
+    padding: var(--space-20) 5%;
+  }
+
+  .services__top {
+    flex-direction: column;
+    align-items: flex-start;
+    margin-bottom: 40px;
+  }
+
+  .services__grid {
+    grid-template-columns: 1fr;
+  }
+
+  .svc-card { padding: 36px 28px; }
+
+  /* Process */
+  .process {
+    padding: var(--space-20) 5%;
+  }
+
+  .process__top {
+    flex-direction: column;
+    margin-bottom: 44px;
+  }
+
+  .steps {
+    grid-template-columns: 1fr 1fr;
+    gap: 32px;
+  }
+
+  /* Team */
+  .team {
+    padding: var(--space-20) 5%;
+  }
+
+  .team__top {
+    flex-direction: column;
+    margin-bottom: 40px;
+  }
+
+  .doctors {
+    grid-template-columns: 1fr;
+    max-width: 420px;
+    margin: 0 auto;
+  }
+
+  /* Reviews */
+  .reviews {
+    padding: var(--space-20) 5%;
+  }
+
+  .reviews__grid {
+    grid-template-columns: 1fr;
+  }
+
+  /* CTA */
+  .cta-banner {
+    padding: 64px 5%;
+    text-align: center;
+    justify-content: center;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  .cta-banner h2 { text-align: center; }
+
+  /* Contact */
+  .contact-grid {
+    grid-template-columns: 1fr;
+    padding: var(--space-20) 5%;
+    gap: 40px;
+  }
+
+  .contact-form-wrap {
+    padding: var(--space-8) var(--space-6);
+  }
+
+  .form-row {
+    grid-template-columns: 1fr;
+  }
+
+  /* Strip */
+  .strip {
+    gap: 20px;
+    padding: 20px 5%;
+    justify-content: flex-start;
+  }
+
+  .strip__div { display: none; }
+
+  /* Footer */
+  .footer {
+    padding: var(--space-12) 5% var(--space-8);
+  }
+
+  .footer__top {
+    grid-template-columns: 1fr;
+    gap: 32px;
+    margin-bottom: 32px;
+  }
+}
+
+/* ── Small mobile (≤ 480px) ────────── */
+@media (max-width: 480px) {
+
+  .hero__title { font-size: 34px; }
+
+  .steps {
+    grid-template-columns: 1fr;
+  }
+
+  .hero__btns {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .review-card { padding: 28px 22px; }
+
+  .about__badge {
+    padding: 14px 16px;
+    left: 0;
+  }
+
+  .about__badge strong { font-size: 28px; }
+}

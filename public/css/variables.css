@@ -1,0 +1,88 @@
+/* ═══════════════════════════════════════
+   AMCO — Design Tokens & CSS Variables
+   ─────────────────────────────────────
+   Centraliza todos los valores del sistema
+   de diseño para garantizar consistencia.
+═══════════════════════════════════════ */
+
+:root {
+  /* ── Palette ── */
+  --color-cream:        #F7F3EE;
+  --color-cream-dark:   #EDE7DC;
+  --color-navy:         #1A2B3C;
+  --color-navy-light:   #2C4257;
+  --color-navy-muted:   rgba(26, 43, 60, 0.06);
+  --color-gold:         #C9A96E;
+  --color-gold-light:   #E8D5B0;
+  --color-gold-shadow:  rgba(201, 169, 110, 0.35);
+  --color-white:        #FFFFFF;
+  --color-text:         #1A2B3C;
+  --color-text-muted:   #6B7A8D;
+  --color-success:      #2D6A2D;
+  --color-success-bg:   #EEF6EE;
+  --color-error:        #B71C1C;
+  --color-error-bg:     #FDECEA;
+  --color-warning:      #7A5C10;
+  --color-warning-bg:   #FDF3DC;
+
+  /* ── Typography ── */
+  --font-serif:  'Playfair Display', Georgia, serif;
+  --font-sans:   'DM Sans', system-ui, -apple-system, sans-serif;
+
+  --text-xs:   11px;
+  --text-sm:   13px;
+  --text-base: 15px;
+  --text-md:   17px;
+  --text-lg:   20px;
+  --text-xl:   24px;
+  --text-2xl:  32px;
+  --text-3xl:  clamp(30px, 4vw, 48px);
+  --text-hero: clamp(40px, 6vw, 70px);
+
+  /* ── Spacing ── */
+  --space-1:  4px;
+  --space-2:  8px;
+  --space-3:  12px;
+  --space-4:  16px;
+  --space-5:  20px;
+  --space-6:  24px;
+  --space-8:  32px;
+  --space-10: 40px;
+  --space-12: 48px;
+  --space-16: 64px;
+  --space-20: 80px;
+  --space-24: 96px;
+  --space-30: 120px;
+
+  /* ── Layout ── */
+  --container-max:   1200px;
+  --gutter:          6%;
+  --header-height:   78px;
+
+  /* ── Borders ── */
+  --radius-sm:   4px;
+  --radius-md:   8px;
+  --radius-lg:   10px;
+  --radius-xl:   12px;
+  --radius-full: 9999px;
+
+  /* ── Shadows ── */
+  --shadow-sm:  0 2px  8px  rgba(26, 43, 60, 0.06);
+  --shadow-md:  0 4px  20px rgba(26, 43, 60, 0.08);
+  --shadow-lg:  0 8px  32px rgba(26, 43, 60, 0.12);
+  --shadow-xl:  0 16px 48px rgba(26, 43, 60, 0.16);
+
+  /* ── Motion ── */
+  --ease:          cubic-bezier(0.25, 0.46, 0.45, 0.94);
+  --ease-bounce:   cubic-bezier(0.34, 1.56, 0.64, 1);
+  --duration-fast: 0.2s;
+  --duration-base: 0.35s;
+  --duration-slow: 0.6s;
+
+  /* ── Z-index scale ── */
+  --z-base:    1;
+  --z-above:   10;
+  --z-header:  100;
+  --z-modal:   200;
+  --z-tooltip: 300;
+}

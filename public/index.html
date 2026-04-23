@@ -1,0 +1,592 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="AMCO Centro Odontológico — Tratamientos invisibles, cómodos y personalizados en Concordia, Entre Ríos.">
+  <meta name="theme-color" content="#1A2B3C">
+
+  <!-- Open Graph / WhatsApp / redes sociales -->
+  <meta property="og:type"        content="website">
+  <meta property="og:site_name"   content="AMCO Centro Odontológico">
+  <meta property="og:title"       content="AMCO · Centro Odontológico · Concordia">
+  <meta property="og:description" content="Tratamientos invisibles, cómodos y personalizados con tecnología de última generación. +2.800 pacientes. 15 años de experiencia.">
+  <meta property="og:image"       content="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1200&q=80">
+  <meta property="og:image:width"  content="1200">
+  <meta property="og:image:height" content="630">
+  <meta property="og:locale"      content="es_AR">
+  <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:title"      content="AMCO · Centro Odontológico · Concordia">
+  <meta name="twitter:description" content="Tratamientos invisibles, cómodos y personalizados. +2.800 pacientes en Concordia, Entre Ríos.">
+  <meta name="twitter:image"      content="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=1200&q=80">
+
+  <!-- Favicon (emoji SVG — sin necesidad de archivos extra) -->
+  <link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>🦷</text></svg>">
+
+  <title>AMCO · Centro Odontológico · Concordia</title>
+
+  <!-- Fonts -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Playfair+Display:ital,wght@0,400;0,600;0,700;1,400;1,600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&display=swap" rel="stylesheet">
+
+  <!-- Styles -->
+  <link rel="stylesheet" href="css/variables.css">
+  <link rel="stylesheet" href="css/base.css">
+  <link rel="stylesheet" href="css/components.css">
+  <link rel="stylesheet" href="css/sections.css">
+  <link rel="stylesheet" href="css/responsive.css">
+</head>
+<body>
+
+  <!-- ── HEADER ─────────────────────────── -->
+  <header id="mainHeader" class="header">
+    <a href="/" class="logo" aria-label="AMCO Inicio">AMCO</a>
+
+    <nav class="nav" role="navigation" aria-label="Navegación principal">
+      <a href="#servicios" class="nav__link">Servicios</a>
+      <a href="#equipo"    class="nav__link">Equipo</a>
+      <a href="#resenas"   class="nav__link">Reseñas</a>
+      <a href="/admin"     class="nav__link nav__link--admin" target="_blank" rel="noopener">
+        <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
+        Admin
+      </a>
+      <a href="#contacto" class="nav__link nav__link--cta">Realizar consulta</a>
+    </nav>
+
+    <button class="hamburger" id="hamburger" aria-label="Abrir menú" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
+
+  <!-- ── MENÚ MOBILE ────────────────────── -->
+  <div class="mobile-menu" id="mobileMenu" role="dialog" aria-label="Menú de navegación" aria-hidden="true">
+    <button class="mobile-menu__close" id="menuClose" aria-label="Cerrar menú">✕</button>
+    <nav>
+      <a href="#servicios" class="mobile-menu__link">Servicios</a>
+      <a href="#equipo"    class="mobile-menu__link">Equipo</a>
+      <a href="#resenas"   class="mobile-menu__link">Reseñas</a>
+      <a href="#contacto"  class="mobile-menu__link">Turnos</a>
+      <a href="/admin"     class="mobile-menu__link mobile-menu__link--admin" target="_blank">Panel Admin</a>
+    </nav>
+  </div>
+
+  <main>
+
+    <!-- ── HERO ──────────────────────────── -->
+    <section class="hero" aria-label="Bienvenida">
+      <div class="hero__bg" aria-hidden="true"></div>
+      <div class="hero__overlay" aria-hidden="true"></div>
+      <div class="hero__content">
+        <p class="hero__tag"><span aria-hidden="true"></span>Centro Odontológico de Excelencia</p>
+        <h1 class="hero__title">Tu sonrisa,<br><em>perfectamente</em><br>alineada</h1>
+        <p class="hero__sub">Tratamientos invisibles, cómodos y personalizados con la tecnología más avanzada del sector.</p>
+        <div class="hero__btns">
+          <a href="#contacto" class="btn btn--gold">Realizar consulta</a>
+          <a href="#servicios" class="btn btn--ghost">Ver servicios</a>
+        </div>
+      </div>
+      <div class="hero__stats" aria-label="Estadísticas">
+        <div class="stat">
+          <span class="stat__num">+2.800</span>
+          <span class="stat__lbl">Pacientes</span>
+        </div>
+        <div class="stat">
+          <span class="stat__num">15</span>
+          <span class="stat__lbl">Años de experiencia</span>
+        </div>
+        <div class="stat">
+          <span class="stat__num">98%</span>
+          <span class="stat__lbl">Satisfacción</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- ── STRIP ─────────────────────────── -->
+    <div class="strip" aria-label="Características principales">
+      <div class="strip__item">
+        <div class="strip__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#C9A96E" stroke-width="1.5"><path d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <p>Tecnología de última generación</p>
+      </div>
+      <div class="strip__div" aria-hidden="true"></div>
+      <div class="strip__item">
+        <div class="strip__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#C9A96E" stroke-width="1.5"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+        </div>
+        <p>Turnos flexibles lunes a sábado</p>
+      </div>
+      <div class="strip__div" aria-hidden="true"></div>
+      <div class="strip__item">
+        <div class="strip__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#C9A96E" stroke-width="1.5"><path d="M4.318 6.318a4.5 4.5 0 000 6.364L12 20.364l7.682-7.682a4.5 4.5 0 00-6.364-6.364L12 7.636l-1.318-1.318a4.5 4.5 0 00-6.364 0z"/></svg>
+        </div>
+        <p>Atención personalizada y sin dolor</p>
+      </div>
+      <div class="strip__div" aria-hidden="true"></div>
+      <div class="strip__item">
+        <div class="strip__icon" aria-hidden="true">
+          <svg viewBox="0 0 24 24" fill="none" stroke="#C9A96E" stroke-width="1.5"><path d="M9 12l2 2 4-4M7.835 4.697a3.42 3.42 0 001.946-.806 3.42 3.42 0 014.438 0 3.42 3.42 0 001.946.806 3.42 3.42 0 013.138 3.138 3.42 3.42 0 00.806 1.946 3.42 3.42 0 010 4.438 3.42 3.42 0 00-.806 1.946 3.42 3.42 0 01-3.138 3.138 3.42 3.42 0 00-1.946.806 3.42 3.42 0 01-4.438 0 3.42 3.42 0 00-1.946-.806 3.42 3.42 0 01-3.138-3.138 3.42 3.42 0 00-.806-1.946 3.42 3.42 0 010-4.438 3.42 3.42 0 00.806-1.946 3.42 3.42 0 013.138-3.138z"/></svg>
+        </div>
+        <p>Profesionales certificados</p>
+      </div>
+    </div>
+
+    <!-- ── NOSOTROS ───────────────────────── -->
+    <section class="about" aria-labelledby="about-title">
+      <div class="about__images reveal">
+        <img class="about__img-main" src="https://images.unsplash.com/photo-1631217868264-e5b90bb7e133?w=800&q=80" alt="Consultorio AMCO — vista interior">
+        <img class="about__img-accent" src="https://images.unsplash.com/photo-1609840114035-3c981b782dfe?w=600&q=80" alt="Equipamiento dental de alta tecnología">
+        <div class="about__badge" aria-label="15 años de experiencia">
+          <strong>15</strong>
+          <span>Años de confianza</span>
+        </div>
+      </div>
+      <div class="about__text reveal reveal--delay">
+        <p class="section-lbl">Quiénes somos</p>
+        <h2 class="sec-title" id="about-title">Una nueva forma de cuidar tu salud bucal</h2>
+        <p class="sec-sub">Combinamos tecnología avanzada con un enfoque completamente personalizado para lograr resultados efectivos, cómodos y estéticos que cambian vidas.</p>
+        <ul class="feat-list" aria-label="Características del centro">
+          <li class="feat-item">
+            <div class="feat-dot" aria-hidden="true"></div>
+            <div>
+              <strong>Diagnóstico digital preciso</strong>
+              <span>Escáneres 3D e imágenes de alta resolución para un plan de tratamiento perfecto.</span>
+            </div>
+          </li>
+          <li class="feat-item">
+            <div class="feat-dot" aria-hidden="true"></div>
+            <div>
+              <strong>Equipo multidisciplinario</strong>
+              <span>Especialistas en cada área para tratar cualquier situación odontológica.</span>
+            </div>
+          </li>
+          <li class="feat-item">
+            <div class="feat-dot" aria-hidden="true"></div>
+            <div>
+              <strong>Seguimiento continuo</strong>
+              <span>Te acompañamos en cada etapa del tratamiento hasta el resultado final.</span>
+            </div>
+          </li>
+        </ul>
+      </div>
+    </section>
+
+    <!-- ── SERVICIOS ─────────────────────── -->
+    <section id="servicios" class="services" aria-labelledby="services-title">
+      <div class="services__top reveal">
+        <div>
+          <p class="section-lbl">Lo que ofrecemos</p>
+          <h2 class="sec-title" id="services-title">Nuestros servicios</h2>
+        </div>
+        <p class="sec-sub" style="max-width:360px">Soluciones integrales para cada necesidad dental, con los mejores materiales y técnicas.</p>
+      </div>
+      <div class="services__grid reveal reveal--delay">
+        <article class="svc-card">
+          <span class="svc-card__num" aria-hidden="true">01</span>
+          <div class="svc-card__ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
+          <h3>Ortodoncia invisible</h3>
+          <p>Alineadores transparentes que corrigen tu dentadura sin brackets visibles ni incomodidades.</p>
+        </article>
+        <article class="svc-card">
+          <span class="svc-card__num" aria-hidden="true">02</span>
+          <div class="svc-card__ico" aria-hidden="true"><svg viewBox="0 0 24 24"><rect x="3" y="6" width="18" height="13" rx="2"/><path d="M8 6V4a1 1 0 011-1h6a1 1 0 011 1v2M12 11v4M10 13h4"/></svg></div>
+          <h3>Implantes dentales</h3>
+          <p>Recuperación permanente de piezas dentales con resultados completamente naturales y estéticos.</p>
+        </article>
+        <article class="svc-card">
+          <span class="svc-card__num" aria-hidden="true">03</span>
+          <div class="svc-card__ico" aria-hidden="true"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="9"/><path d="M9 12l2 2 4-4"/></svg></div>
+          <h3>Blanqueamiento dental</h3>
+          <p>Tratamientos profesionales que mejoran notablemente el color de tu sonrisa en una sola sesión.</p>
+        </article>
+        <article class="svc-card">
+          <span class="svc-card__num" aria-hidden="true">04</span>
+          <div class="svc-card__ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg></div>
+          <h3>Rehabilitación oral</h3>
+          <p>Soluciones completas para restaurar la función masticatoria y la estética de tu boca.</p>
+        </article>
+        <article class="svc-card">
+          <span class="svc-card__num" aria-hidden="true">05</span>
+          <div class="svc-card__ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M20.84 4.61a5.5 5.5 0 00-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 00-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 000-7.78z"/></svg></div>
+          <h3>Odontopediatría</h3>
+          <p>Cuidado especializado para los más pequeños, con un ambiente cálido y libre de miedo.</p>
+        </article>
+        <article class="svc-card">
+          <span class="svc-card__num" aria-hidden="true">06</span>
+          <div class="svc-card__ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M9 3H5a2 2 0 00-2 2v4m6-6h10a2 2 0 012 2v4M9 3v18m0 0h10a2 2 0 002-2V9M9 21H5a2 2 0 01-2-2V9m0 0h18"/></svg></div>
+          <h3>Periodoncia</h3>
+          <p>Tratamiento y prevención de enfermedades de las encías para una salud bucal completa.</p>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── PROCESO ────────────────────────── -->
+    <section class="process" aria-labelledby="process-title">
+      <div class="process__top reveal">
+        <div>
+          <p class="section-lbl">Cómo trabajamos</p>
+          <h2 class="sec-title" id="process-title">Tu tratamiento,<br>paso a paso</h2>
+        </div>
+        <p class="sec-sub" style="max-width:340px">Un proceso claro y transparente desde el primer momento hasta el resultado final.</p>
+      </div>
+      <ol class="steps reveal reveal--delay" aria-label="Pasos del proceso">
+        <li class="step">
+          <div class="step__circle" aria-hidden="true"><span>01</span></div>
+          <h4>Consulta inicial</h4>
+          <p>Evaluamos tu salud bucal con diagnóstico digital completo y sin costo.</p>
+        </li>
+        <li class="step">
+          <div class="step__circle" aria-hidden="true"><span>02</span></div>
+          <h4>Plan personalizado</h4>
+          <p>Diseñamos el tratamiento ideal según tus objetivos y presupuesto.</p>
+        </li>
+        <li class="step">
+          <div class="step__circle" aria-hidden="true"><span>03</span></div>
+          <h4>Tratamiento</h4>
+          <p>Ejecutamos cada etapa con precisión, comodidad y los mejores materiales.</p>
+        </li>
+        <li class="step">
+          <div class="step__circle" aria-hidden="true"><span>04</span></div>
+          <h4>Seguimiento</h4>
+          <p>Controles periódicos para asegurar resultados duraderos y tu satisfacción.</p>
+        </li>
+      </ol>
+    </section>
+
+    <!-- ── EQUIPO ─────────────────────────── -->
+    <section id="equipo" class="team" aria-labelledby="team-title">
+      <div class="team__top reveal">
+        <div>
+          <p class="section-lbl">Nuestros especialistas</p>
+          <h2 class="sec-title" id="team-title">El equipo detrás<br>de tu sonrisa</h2>
+        </div>
+        <p class="sec-sub" style="max-width:380px">Profesionales con formación internacional comprometidos con tu bienestar.</p>
+      </div>
+      <div class="doctors reveal reveal--delay">
+        <article class="doc-card">
+          <div class="doc-card__img-wrap">
+            <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=600&q=80" alt="Dr. Juan Pérez — Ortodoncista">
+            <div class="doc-card__overlay" aria-hidden="true"></div>
+            <div class="doc-card__social" aria-label="Redes sociales">
+              <a href="#" aria-label="LinkedIn Dr. Juan Pérez">
+                <svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+              </a>
+            </div>
+          </div>
+          <div class="doc-card__info">
+            <h4>Dr. Juan Pérez</h4>
+            <span class="doc-card__spec">Ortodoncista · Implantólogo</span>
+            <p>Especialista en ortodoncia invisible con más de 10 años de experiencia clínica internacional.</p>
+            <span class="doc-card__tag">Ortodoncia · Implantes</span>
+          </div>
+        </article>
+        <article class="doc-card">
+          <div class="doc-card__img-wrap">
+            <img src="https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=600&q=80" alt="Dra. Ana López — Odontopediatra">
+            <div class="doc-card__overlay" aria-hidden="true"></div>
+            <div class="doc-card__social" aria-label="Redes sociales">
+              <a href="#" aria-label="LinkedIn Dra. Ana López">
+                <svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+              </a>
+            </div>
+          </div>
+          <div class="doc-card__info">
+            <h4>Dra. Ana López</h4>
+            <span class="doc-card__spec">Odontopediatra · Rehabilitadora</span>
+            <p>Referente en odontología infantil con formación en Barcelona y Buenos Aires.</p>
+            <span class="doc-card__tag">Pediatría · Rehabilitación</span>
+          </div>
+        </article>
+        <article class="doc-card">
+          <div class="doc-card__img-wrap">
+            <img src="https://images.unsplash.com/photo-1582750433449-648ed127bb54?w=600&q=80" alt="Dr. Carlos Díaz — Periodoncista">
+            <div class="doc-card__overlay" aria-hidden="true"></div>
+            <div class="doc-card__social" aria-label="Redes sociales">
+              <a href="#" aria-label="LinkedIn Dr. Carlos Díaz">
+                <svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12"/><circle cx="4" cy="4" r="2"/></svg>
+              </a>
+            </div>
+          </div>
+          <div class="doc-card__info">
+            <h4>Dr. Carlos Díaz</h4>
+            <span class="doc-card__spec">Periodoncista · Cirujano</span>
+            <p>Experto en periodoncia y cirugía oral con enfoque en tratamientos mínimamente invasivos.</p>
+            <span class="doc-card__tag">Periodoncia · Cirugía</span>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <!-- ── RESEÑAS ────────────────────────── -->
+    <section id="resenas" class="reviews" aria-labelledby="reviews-title">
+      <div class="reviews__top reveal">
+        <p class="section-lbl reviews__lbl">Lo que dicen nuestros pacientes</p>
+        <h2 class="sec-title" id="reviews-title">Historias reales,<br>sonrisas reales</h2>
+      </div>
+      <div class="reviews__grid reveal reveal--delay">
+        <article class="review-card">
+          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
+          <blockquote>"El equipo de AMCO me cambió la vida. Después de años sin sonreír, hoy lo hago sin pensarlo. El tratamiento fue cómodo y los resultados superaron todas mis expectativas."</blockquote>
+          <footer class="reviewer">
+            <div class="reviewer__avatar" aria-hidden="true">MG</div>
+            <div>
+              <span class="reviewer__name">María G.</span>
+              <span class="reviewer__date">Ortodoncia invisible · Marzo 2025</span>
+            </div>
+          </footer>
+        </article>
+        <article class="review-card">
+          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
+          <blockquote>"Llevé a mis hijos y la experiencia fue increíble. La Dra. López tiene una paciencia única. Los chicos salieron felices del consultorio, algo que jamás pensé posible."</blockquote>
+          <footer class="reviewer">
+            <div class="reviewer__avatar" aria-hidden="true">RP</div>
+            <div>
+              <span class="reviewer__name">Roberto P.</span>
+              <span class="reviewer__date">Odontopediatría · Enero 2026</span>
+            </div>
+          </footer>
+        </article>
+        <article class="review-card">
+          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
+          <blockquote>"Me realizaron dos implantes y el proceso fue completamente sin dolor. La tecnología que tienen es de otro nivel. Muy profesionales y atentos en absolutamente todo."</blockquote>
+          <footer class="reviewer">
+            <div class="reviewer__avatar" aria-hidden="true">LC</div>
+            <div>
+              <span class="reviewer__name">Laura C.</span>
+              <span class="reviewer__date">Implantes · Febrero 2026</span>
+            </div>
+          </footer>
+        </article>
+        <article class="review-card">
+          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
+          <blockquote>"El blanqueamiento quedó espectacular. En una sola sesión noté una diferencia enorme. Consultorio moderno, limpio y el personal es sumamente amable."</blockquote>
+          <footer class="reviewer">
+            <div class="reviewer__avatar" aria-hidden="true">SV</div>
+            <div>
+              <span class="reviewer__name">Sofía V.</span>
+              <span class="reviewer__date">Blanqueamiento · Diciembre 2025</span>
+            </div>
+          </footer>
+        </article>
+        <article class="review-card">
+          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
+          <blockquote>"El Dr. Díaz me trató un problema de encías que tenía hace años. Explicó todo con claridad y el seguimiento post-operatorio fue impecable. Muy recomendable."</blockquote>
+          <footer class="reviewer">
+            <div class="reviewer__avatar" aria-hidden="true">FN</div>
+            <div>
+              <span class="reviewer__name">Fernando N.</span>
+              <span class="reviewer__date">Periodoncia · Noviembre 2025</span>
+            </div>
+          </footer>
+        </article>
+        <article class="review-card">
+          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
+          <blockquote>"Hacía años que postergaba ir al dentista por miedo. En AMCO me atendieron con tanta tranquilidad que volví sin dudar. Ahora los recomiendo a todos mis conocidos."</blockquote>
+          <footer class="reviewer">
+            <div class="reviewer__avatar" aria-hidden="true">AM</div>
+            <div>
+              <span class="reviewer__name">Andrea M.</span>
+              <span class="reviewer__date">Consulta general · Octubre 2025</span>
+            </div>
+          </footer>
+        </article>
+      </div>
+      <div class="reviews__summary reveal">
+        <span class="reviews__score" aria-label="Calificación 4.9 sobre 5">4.9 <span aria-hidden="true">★</span></span>
+        <p>Promedio en Google Reviews · Basado en más de 320 reseñas verificadas</p>
+      </div>
+    </section>
+
+    <!-- ── CTA BANNER ─────────────────────── -->
+    <section class="cta-banner reveal" aria-label="Llamado a la acción">
+      <h2>¿Listo para <em>transformar</em><br>tu sonrisa?</h2>
+      <a href="#contacto" class="btn btn--gold">Realizar consulta</a>
+    </section>
+
+    <!-- ── CONTACTO ───────────────────────── -->
+    <section id="contacto" class="contact-section" aria-labelledby="contact-title">
+      <div class="contact-grid">
+
+        <!-- Formulario -->
+        <div class="contact-form-wrap reveal">
+          <h2 id="contact-title">Realizá tu consulta</h2>
+          <p>Completá el formulario y nos contactamos para coordinar tu cita.</p>
+          <form id="turnoForm" novalidate>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="nombre">Nombre completo <span aria-hidden="true">*</span></label>
+                <input type="text" id="nombre" name="nombre" placeholder="Ej: María González" required autocomplete="name">
+              </div>
+              <div class="form-group">
+                <label for="email">Email</label>
+                <input type="email" id="email" name="email" placeholder="tucorreo@mail.com" autocomplete="email">
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="telefono">Teléfono</label>
+                <input type="tel" id="telefono" name="telefono" placeholder="Ej: 341 555-0123" autocomplete="tel">
+              </div>
+              <div class="form-group">
+                <label for="servicio">Servicio de interés</label>
+                <select id="servicio" name="servicio">
+                  <option value="">Seleccioná un servicio...</option>
+                  <option>Ortodoncia invisible</option>
+                  <option>Implantes dentales</option>
+                  <option>Blanqueamiento dental</option>
+                  <option>Rehabilitación oral</option>
+                  <option>Odontopediatría</option>
+                  <option>Periodoncia</option>
+                  <option>Consulta general</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label for="fecha">Fecha preferida <span aria-hidden="true">*</span></label>
+                <input type="date" id="fecha" name="fecha" required>
+              </div>
+              <div class="form-group">
+                <label for="hora">Horario preferido <span aria-hidden="true">*</span></label>
+                <select id="hora" name="hora" required>
+                  <option value="">Seleccioná un horario...</option>
+                  <option value="08:00">08:00 hs</option>
+                  <option value="08:30">08:30 hs</option>
+                  <option value="09:00">09:00 hs</option>
+                  <option value="09:30">09:30 hs</option>
+                  <option value="10:00">10:00 hs</option>
+                  <option value="10:30">10:30 hs</option>
+                  <option value="11:00">11:00 hs</option>
+                  <option value="11:30">11:30 hs</option>
+                  <option value="12:00">12:00 hs</option>
+                  <option value="12:30">12:30 hs</option>
+                  <option value="13:00">13:00 hs</option>
+                  <option value="13:30">13:30 hs</option>
+                  <option value="14:00">14:00 hs</option>
+                  <option value="14:30">14:30 hs</option>
+                  <option value="15:00">15:00 hs</option>
+                  <option value="15:30">15:30 hs</option>
+                  <option value="16:00">16:00 hs</option>
+                  <option value="16:30">16:30 hs</option>
+                  <option value="17:00">17:00 hs</option>
+                  <option value="17:30">17:30 hs</option>
+                  <option value="18:00">18:00 hs</option>
+                  <option value="18:30">18:30 hs</option>
+                  <option value="19:00">19:00 hs</option>
+                  <option value="19:30">19:30 hs</option>
+                  <option value="20:00">20:00 hs</option>
+                </select>
+              </div>
+            </div>
+            <p class="form-note">Al enviar tu consulta aceptás que nos comuniquemos para confirmar disponibilidad. La consulta inicial no tiene costo. Si proporcionás tu email, recibirás una confirmación automática.</p>
+            <button type="submit" class="btn-submit" id="submitBtn">Confirmar consulta</button>
+            <div id="formMsg" class="form-msg" role="alert" aria-live="polite"></div>
+          </form>
+        </div>
+
+        <!-- Info -->
+        <div class="contact-info reveal reveal--delay">
+          <p class="section-lbl">Dónde encontrarnos</p>
+          <h2 class="sec-title">Visitanos</h2>
+          <p class="sec-sub">Estamos en el corazón de la ciudad, con fácil acceso y estacionamiento disponible.</p>
+          <ul class="info-list" aria-label="Información de contacto">
+            <li class="info-item">
+              <div class="info-item__ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M17.657 16.657L13.414 20.9a1.998 1.998 0 01-2.827 0l-4.244-4.243a8 8 0 1111.314 0z"/><path d="M15 11a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
+              </div>
+              <div>
+                <strong>Dirección</strong>
+                <span>Hipólito Yrigoyen 1293, Concordia, Entre Ríos</span>
+              </div>
+            </li>
+            <li class="info-item">
+              <div class="info-item__ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 5a2 2 0 012-2h3.28a1 1 0 01.948.684l1.498 4.493a1 1 0 01-.502 1.21l-2.257 1.13a11.042 11.042 0 005.516 5.516l1.13-2.257a1 1 0 011.21-.502l4.493 1.498a1 1 0 01.684.949V19a2 2 0 01-2 2h-1C9.716 21 3 14.284 3 6V5z"/></svg>
+              </div>
+              <div>
+                <strong>Teléfono</strong>
+                <span><a href="tel:+543415550200">(0341) 555-0200</a></span>
+              </div>
+            </li>
+            <li class="info-item">
+              <div class="info-item__ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>
+              </div>
+              <div>
+                <strong>Horarios</strong>
+                <span>Lun–Vie: 8:00–20:00 hs · Sáb: 9:00–14:00 hs</span>
+              </div>
+            </li>
+            <li class="info-item">
+              <div class="info-item__ico" aria-hidden="true">
+                <svg viewBox="0 0 24 24"><path d="M3 8l7.89 5.26a2 2 0 002.22 0L21 8M5 19h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"/></svg>
+              </div>
+              <div>
+                <strong>Email</strong>
+                <span><a href="mailto:turnos@amco.com.ar">turnos@amco.com.ar</a></span>
+              </div>
+            </li>
+          </ul>
+          <div class="map-wrap">
+            <iframe src="https://www.google.com/maps?q=-31.3861277,-58.013006&z=17&output=embed" allowfullscreen loading="lazy" title="Ubicación AMCO en Google Maps"></iframe>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+  </main>
+
+  <!-- ── FOOTER ─────────────────────────── -->
+  <footer class="footer" role="contentinfo">
+    <div class="footer__top">
+      <div class="footer__brand">
+        <span class="footer__logo" aria-label="AMCO">AMCO</span>
+        <p>Centro odontológico con más de 15 años comprometido con la salud bucal y la sonrisa de nuestros pacientes.</p>
+      </div>
+      <nav class="footer__col" aria-label="Servicios">
+        <h5>Servicios</h5>
+        <ul>
+          <li><a href="#servicios">Ortodoncia invisible</a></li>
+          <li><a href="#servicios">Implantes dentales</a></li>
+          <li><a href="#servicios">Blanqueamiento</a></li>
+          <li><a href="#servicios">Rehabilitación oral</a></li>
+          <li><a href="#servicios">Odontopediatría</a></li>
+        </ul>
+      </nav>
+      <nav class="footer__col" aria-label="Centro">
+        <h5>Centro</h5>
+        <ul>
+          <li><a href="#equipo">Nuestro equipo</a></li>
+          <li><a href="#resenas">Reseñas</a></li>
+          <li><a href="#contacto">Realizar consulta</a></li>
+          <li><a href="https://www.instagram.com/amco_odontologia/">Instagram</a></li>
+          <li><a href="https://wa.me/5493454404511" target="_blank" rel="noopener">WhatsApp</a></li>
+        </ul>
+      </nav>
+    </div>
+    <div class="footer__bottom">
+      <p>© 2026 AMCO · Centro Odontológico. Todos los derechos reservados.</p>
+      <p>Concordia, Entre Ríos · Argentina</p>
+    </div>
+  </footer>
+
+  <!-- ── WhatsApp flotante ─────────────── -->
+  <a href="https://wa.me/5493454404511"
+     class="whatsapp-float"
+     target="_blank"
+     rel="noopener"
+     aria-label="Contactar por WhatsApp">
+    <svg viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+      <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
+    </svg>
+  </a>
+
+  <!-- Scripts -->
+  <script src="js/analytics.js" defer></script>
+  <script src="js/main.js" defer></script>
+
+</body>
+</html>

@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="robots" content="noindex, nofollow">
+<title>AMCO Admin</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700&family=Playfair+Display:wght@600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="css/admin.css">
+</head>
+<body class="admin-body">
+
+<!-- LOGIN -->
+<div id="loginScreen" class="login-screen">
+  <div class="login-box">
+    <div class="login-logo">AMCO</div>
+    <div class="login-logo-bar"></div>
+    <p class="login-sub">Panel de administración</p>
+    <form id="loginForm" novalidate>
+      <div class="login-group">
+        <label for="loginUser">Usuario</label>
+        <input type="text" id="loginUser" autocomplete="username" placeholder="admin" required>
+      </div>
+      <div class="login-group">
+        <label for="loginPass">Contraseña</label>
+        <input type="password" id="loginPass" autocomplete="current-password" placeholder="••••••••" required>
+      </div>
+      <div id="loginError" class="login-error" role="alert" aria-live="polite"></div>
+      <button type="submit" class="login-btn" id="loginBtn">
+        <span class="login-btn__text">Ingresar</span>
+        <span class="login-btn__spinner"></span>
+      </button>
+    </form>
+    <a href="/" class="login-back">← Volver al sitio</a>
+  </div>
+</div>
+
+<!-- PANEL -->
+<div id="adminPanel" class="admin-panel" style="display:none">
+
+  <!-- Sidebar -->
+  <aside class="sidebar" id="sidebar">
+    <div class="sidebar__brand">
+      <span class="sidebar__logo">AMCO</span>
+      <span class="sidebar__sub">Admin</span>
+    </div>
+    <nav class="sidebar__nav">
+      <a href="#" class="sidebar__link active" data-section="dashboard" data-admin-only>
+        <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
+        Dashboard
+      </a>
+      <a href="#" class="sidebar__link" data-section="turnos">
+        <svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg>
+        Turnos
+      </a>
+
+      <a href="#" class="sidebar__link" data-section="eliminados">
+        <svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+        Eliminados
+      </a>
+      <a href="#" class="sidebar__link" data-section="historial-hoy">
+        <svg viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        Historial del día
+      </a>
+      <a href="#" class="sidebar__link" data-section="analytics" data-admin-only>
+        <svg viewBox="0 0 24 24"><path d="M18 20V10M12 20V4M6 20v-6"/></svg>
+        Analítica
+      </a>
+      <a href="#" class="sidebar__link" data-section="usuarios" data-admin-only>
+        <svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8zM23 21v-2a4 4 0 00-3-3.87M16 3.13a4 4 0 010 7.75"/></svg>
+        Usuarios
+      </a>
+      <a href="#" class="sidebar__link" data-section="pacientes" data-admin-only>
+        <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 11v6M9 14h6"/></svg>
+        Pacientes
+      </a>
+    </nav>
+    <div class="sidebar__footer">
+      <div class="sidebar__user">
+        <div class="sidebar__avatar" id="adminAvatar">A</div>
+        <div class="sidebar__user-info">
+          <span class="sidebar__user-name" id="adminName">admin</span>
+          <span class="sidebar__user-role" id="adminRole">Administrador</span>
+        </div>
+      </div>
+      <button class="sidebar__logout" id="logoutBtn" title="Cerrar sesión">
+        <svg viewBox="0 0 24 24"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4M16 17l5-5-5-5M21 12H9"/></svg>
+      </button>
+    </div>
+  </aside>
+
+  <div class="sidebar-overlay" id="sidebarOverlay"></div>
+
+  <div class="admin-main">
+    <!-- Topbar -->
+    <header class="admin-topbar">
+      <button class="topbar__menu-btn" id="sidebarToggle">
+        <svg viewBox="0 0 24 24"><path d="M3 12h18M3 6h18M3 18h18"/></svg>
+      </button>
+      <h1 class="topbar__title" id="pageTitle">Dashboard</h1>
+      <div class="topbar__actions">
+        <button class="topbar__refresh" id="refreshBtn" title="Actualizar">
+          <svg viewBox="0 0 24 24"><path d="M23 4v6h-6M1 20v-6h6"/><path d="M3.51 9a9 9 0 0114.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0020.49 15"/></svg>
+        </button>
+        <a href="/" target="_blank" class="topbar__site-link">
+          <svg viewBox="0 0 24 24"><path d="M18 13v6a2 2 0 01-2 2H5a2 2 0 01-2-2V8a2 2 0 012-2h6M15 3h6v6M10 14L21 3"/></svg>
+          Ver sitio
+        </a>
+      </div>
+    </header>
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <section id="section-dashboard" class="admin-section">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-card__ico kpi-card__ico--gold"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+          <div class="kpi-card__body"><span class="kpi-card__label">Turnos activos</span><strong class="kpi-card__value" id="kpiTurnos">—</strong></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__ico kpi-card__ico--navy"><svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg></div>
+          <div class="kpi-card__body"><span class="kpi-card__label">Turnos hoy</span><strong class="kpi-card__value" id="kpiHoy">—</strong></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__ico kpi-card__ico--sage"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <div class="kpi-card__body"><span class="kpi-card__label">Visitas totales</span><strong class="kpi-card__value" id="kpiVisitas">—</strong></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__ico kpi-card__ico--warning"><svg viewBox="0 0 24 24"><path d="M10.29 3.86L1.82 18a2 2 0 001.71 3h16.94a2 2 0 001.71-3L13.71 3.86a2 2 0 00-3.42 0z"/><path d="M12 9v4M12 17h.01"/></svg></div>
+          <div class="kpi-card__body"><span class="kpi-card__label">Pendientes</span><strong class="kpi-card__value" id="kpiPend">—</strong></div>
+        </div>
+      </div>
+      <div class="dash-grid">
+        <div class="dash-card">
+          <h3>Últimos turnos</h3>
+          <div class="mini-table-wrap">
+            <table class="mini-table" id="dashUltimosTurnos">
+              <thead><tr><th>Paciente</th><th>Fecha</th><th>Servicio</th><th>Estado</th></tr></thead>
+              <tbody></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="dash-card">
+          <h3>Servicios más solicitados</h3>
+          <div id="serviciosChart" class="bar-chart"></div>
+        </div>
+      </div>
+      <div class="dash-card">
+        <h3>Visitas por día <span class="dash-card__sub">(últimos 30 días)</span></h3>
+        <div id="activityChart" class="activity-chart"></div>
+      </div>
+    </section>
+
+    <!-- ═══ TURNOS ═══ -->
+    <section id="section-turnos" class="admin-section" style="display:none">
+
+      <!-- Calendario -->
+      <div class="calendar-wrap">
+        <div class="calendar-header">
+          <div class="cal-header-left">
+            <button class="cal-nav-btn" id="calPrev" title="Mes anterior">&#8249;</button>
+            <div class="cal-header-center">
+              <h3 id="calTitle">Abril 2026</h3>
+            </div>
+            <button class="cal-nav-btn" id="calNext" title="Mes siguiente">&#8250;</button>
+            <button class="cal-today-btn" id="calToday">Hoy</button>
+          </div>
+          <div class="cal-header-right">
+            <div class="cal-legend-inline">
+              <span><span class="cal-dot dot--pendiente"></span>Pendiente</span>
+              <span><span class="cal-dot dot--confirmado"></span>Confirmado</span>
+              <span><span class="cal-dot dot--completado"></span>Completado</span>
+              <span><span class="cal-dot dot--cancelado"></span>Cancelado</span>
+            </div>
+          </div>
+        </div>
+        <div class="calendar-dow">
+          <span>Lun</span><span>Mar</span><span>Mié</span><span>Jue</span><span>Vie</span><span>Sáb</span><span>Dom</span>
+        </div>
+        <div class="calendar-grid" id="calendarGrid"></div>
+      </div>
+
+      <!-- Filtros y tabla -->
+      <div class="section-toolbar">
+        <div class="toolbar-left">
+          <input type="search" class="toolbar-search" id="searchInput" placeholder="Buscar paciente, servicio...">
+          <input type="date" class="toolbar-date" id="filterFrom" title="Desde">
+          <input type="date" class="toolbar-date" id="filterTo" title="Hasta">
+          <button class="toolbar-btn" id="filterBtn">Filtrar</button>
+          <button class="toolbar-btn toolbar-btn--ghost" id="clearFilterBtn">Limpiar</button>
+        </div>
+        <div style="display:flex;align-items:center;gap:12px">
+          <span class="total-count" id="totalCount"></span>
+          <button class="toolbar-btn" id="nuevoTurnoBtn" style="background:var(--adm-gold);color:#fff;border-color:var(--adm-gold);white-space:nowrap">+ Nuevo turno</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>Paciente</th><th>Fecha / Hora</th><th>Servicio</th><th>Teléfono</th><th>Médico</th><th>Estado</th><th>Registrado</th><th>Acción</th></tr>
+          </thead>
+          <tbody id="turnosBody"><tr><td colspan="9" class="table-loading">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ ELIMINADOS ═══ -->
+    <section id="section-eliminados" class="admin-section" style="display:none">
+      <div class="empty-info">
+        <svg viewBox="0 0 24 24" width="36" height="36"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg>
+        <p>Turnos eliminados — pueden consultarse pero no restaurarse desde el panel.</p>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead><tr><th>#</th><th>Paciente</th><th>Fecha</th><th>Hora</th><th>Servicio</th><th>Creado</th><th>Eliminado</th></tr></thead>
+          <tbody id="eliminadosBody"><tr><td colspan="7" class="table-loading">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ ANALYTICS ═══ -->
+    <section id="section-analytics" class="admin-section" style="display:none">
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-card__ico kpi-card__ico--gold"><svg viewBox="0 0 24 24"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg></div>
+          <div class="kpi-card__body"><span class="kpi-card__label">Pageviews</span><strong class="kpi-card__value" id="anPageviews">—</strong></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__ico kpi-card__ico--navy"><svg viewBox="0 0 24 24"><path d="M17 21v-2a4 4 0 00-4-4H5a4 4 0 00-4 4v2M9 11a4 4 0 100-8 4 4 0 000 8z"/></svg></div>
+          <div class="kpi-card__body"><span class="kpi-card__label">Sesiones únicas</span><strong class="kpi-card__value" id="anSessions">—</strong></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__ico kpi-card__ico--sage"><svg viewBox="0 0 24 24"><rect x="3" y="4" width="18" height="18" rx="2"/><path d="M16 2v4M8 2v4M3 10h18"/></svg></div>
+          <div class="kpi-card__body"><span class="kpi-card__label">Turnos esta semana</span><strong class="kpi-card__value" id="anTurnosSem">—</strong></div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-card__ico kpi-card__ico--warning"><svg viewBox="0 0 24 24"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg></div>
+          <div class="kpi-card__body"><span class="kpi-card__label">Turnos eliminados</span><strong class="kpi-card__value" id="anEliminados">—</strong></div>
+        </div>
+      </div>
+      <div class="dash-grid">
+        <div class="dash-card">
+          <h3>Visitas por día</h3>
+          <div id="visitasDiaChart" class="activity-chart"></div>
+        </div>
+        <div class="dash-card">
+          <h3>Eventos registrados</h3>
+          <div id="eventosChart" class="bar-chart"></div>
+        </div>
+      </div>
+      <div class="dash-card">
+        <h3>Turnos por día</h3>
+        <div id="turnosDiaChart" class="activity-chart"></div>
+      </div>
+    </section>
+
+    <!-- ═══ USUARIOS ═══ -->
+    <section id="section-usuarios" class="admin-section" style="display:none">
+      <div class="dash-grid">
+
+        <!-- Tabla usuarios -->
+        <div class="dash-card" style="grid-column:1/-1">
+          <h3>Usuarios activos</h3>
+          <div class="table-wrap" style="margin-top:16px">
+            <table class="data-table">
+              <thead><tr><th>Usuario</th><th>Nombre</th><th>Rol</th><th>Médico asignado</th><th>Acciones</th></tr></thead>
+              <tbody id="usuariosBody"><tr><td colspan="5" class="table-loading">Cargando...</td></tr></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Formulario nuevo usuario -->
+        <div class="dash-card">
+          <h3>Agregar usuario</h3>
+          <form id="addUserForm" style="margin-top:20px">
+            <div class="form-group-adm">
+              <label>Usuario</label>
+              <input type="text" id="newUsername" placeholder="jperez" required>
+            </div>
+            <div class="form-group-adm">
+              <label>Contraseña</label>
+              <input type="password" id="newPassword" placeholder="••••••••" required>
+            </div>
+            <div class="form-group-adm">
+              <label>Nombre completo</label>
+              <input type="text" id="newNombre" placeholder="Dr. Juan Pérez">
+            </div>
+            <div class="form-group-adm">
+              <label>Rol</label>
+              <select id="newRole">
+                <option value="doctor">Doctor</option>
+                <option value="admin">Administrador</option>
+              </select>
+            </div>
+            <div class="form-group-adm" id="medicoGroup">
+              <label>Médico asociado</label>
+              <select id="newMedico">
+                <option value="">Sin asignar</option>
+                <option value="dr-perez">Dr. Juan Pérez</option>
+                <option value="dra-lopez">Dra. Ana López</option>
+                <option value="dr-diaz">Dr. Carlos Díaz</option>
+              </select>
+            </div>
+            <button type="submit" class="toolbar-btn" style="width:100%;margin-top:8px">Crear usuario</button>
+          </form>
+        </div>
+
+        <div class="dash-card">
+          <h3>Credenciales actuales</h3>
+          <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
+            <div class="cred-card">
+              <div class="cred-card__role">Admin</div>
+              <div class="cred-card__info"><span>admin</span><span>/ 1234</span></div>
+              <div class="cred-card__desc">Acceso completo a todas las secciones</div>
+            </div>
+            <div class="cred-card cred-card--doctor">
+              <div class="cred-card__role">Dr. Pérez</div>
+              <div class="cred-card__info"><span>jperez</span><span>/ perez123</span></div>
+              <div class="cred-card__desc">Solo ve sus propios turnos</div>
+            </div>
+            <div class="cred-card cred-card--doctor">
+              <div class="cred-card__role">Dra. López</div>
+              <div class="cred-card__info"><span>alopez</span><span>/ lopez123</span></div>
+              <div class="cred-card__desc">Solo ve sus propios turnos</div>
+            </div>
+            <div class="cred-card cred-card--doctor">
+              <div class="cred-card__role">Dr. Díaz</div>
+              <div class="cred-card__info"><span>cdiaz</span><span>/ diaz123</span></div>
+              <div class="cred-card__desc">Solo ve sus propios turnos</div>
+            </div>
+          </div>
+        </div>
+
+      </div>
+    </section>
+
+    <!-- ═══ PACIENTES ═══ -->
+    <section id="section-pacientes" class="admin-section" style="display:none">
+
+      <!-- Toolbar -->
+      <div class="section-toolbar">
+        <div class="toolbar-left">
+          <input type="search" class="toolbar-search" id="pacientesSearch" placeholder="Buscar por nombre, email, DNI...">
+          <button class="toolbar-btn" id="pacientesSearchBtn">Buscar</button>
+          <button class="toolbar-btn toolbar-btn--ghost" id="pacientesClearBtn">Limpiar</button>
+        </div>
+        <button class="toolbar-btn" id="nuevoPacienteBtn" style="background:var(--adm-gold);color:#fff;border-color:var(--adm-gold)">
+          + Nuevo paciente
+        </button>
+      </div>
+
+      <!-- Tabla -->
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr><th>#</th><th>Paciente</th><th>DNI</th><th>Teléfono</th><th>F. Nacimiento</th><th>Registrado</th><th>Acción</th></tr>
+          </thead>
+          <tbody id="pacientesBody"><tr><td colspan="7" class="table-loading">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ HISTORIAL DEL DÍA ═══ -->
+    <section id="section-historial-hoy" class="admin-section" style="display:none">
+      <div class="empty-info" style="margin-bottom:8px">
+        <svg viewBox="0 0 24 24" width="32" height="32"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+        <p id="historialHoyFecha">Turnos y historial clínico del día de hoy</p>
+      </div>
+
+      <div id="historialHoyLista" style="display:flex;flex-direction:column;gap:16px;padding:0 2px">
+        <div style="text-align:center;padding:40px;color:var(--adm-muted)">Cargando...</div>
+      </div>
+    </section>
+
+  </div><!-- end admin-main -->
+</div><!-- end adminPanel -->
+
+<!-- MODAL PACIENTE -->
+<div id="pacienteModal" class="modal" style="display:none">
+  <div class="modal__backdrop" id="pacienteModalBackdrop"></div>
+  <div class="modal__box" style="max-width:780px;width:95%;max-height:90vh;overflow-y:auto">
+    <div class="modal__header" style="position:sticky;top:0;z-index:10;background:var(--adm-surface)">
+      <h2 id="pacienteModalTitle">Ficha clínica</h2>
+      <button class="modal__close" id="pacienteModalClose">✕</button>
+    </div>
+    <div class="modal__body" style="padding-bottom:8px">
+
+      <!-- ── DATOS PERSONALES ── -->
+      <div class="ficha-section">
+        <div class="ficha-section__title">👤 Datos del paciente</div>
+        <div class="ficha-grid ficha-grid--3">
+          <div class="form-group-adm ficha-col--full">
+            <label>Nombre completo (Paciente)</label>
+            <input type="text" id="pmNombre" placeholder="Apellido y nombre">
+          </div>
+          <div class="form-group-adm">
+            <label>Obra social</label>
+            <input type="text" id="pmObrasocial" placeholder="Nombre de la obra social">
+          </div>
+          <div class="form-group-adm">
+            <label>Credencial N°</label>
+            <input type="text" id="pmCredencial" placeholder="N° de credencial">
+          </div>
+          <div class="form-group-adm ficha-col--full">
+            <label>Titular</label>
+            <input type="text" id="pmTitular" placeholder="Nombre del titular">
+          </div>
+          <div class="form-group-adm">
+            <label>Grupo familiar</label>
+            <input type="text" id="pmGrupoFamiliar" placeholder="N° grupo familiar">
+          </div>
+          <div class="form-group-adm">
+            <label>Parentesco</label>
+            <input type="text" id="pmParentesco" placeholder="Hijo/a, cónyuge...">
+          </div>
+          <div class="form-group-adm">
+            <label>Edad</label>
+            <input type="text" id="pmEdad" placeholder="Años">
+          </div>
+          <div class="form-group-adm">
+            <label>Fecha de nacimiento</label>
+            <input type="date" id="pmFechaNac">
+          </div>
+          <div class="form-group-adm ficha-col--full">
+            <label>Domicilio</label>
+            <input type="text" id="pmDireccion" placeholder="Calle y número">
+          </div>
+          <div class="form-group-adm">
+            <label>Localidad</label>
+            <input type="text" id="pmLocalidad" placeholder="Ciudad">
+          </div>
+          <div class="form-group-adm ficha-col--full">
+            <label>Lugar donde trabaja</label>
+            <input type="text" id="pmTrabajo" placeholder="Empresa / institución">
+          </div>
+          <div class="form-group-adm">
+            <label>Teléfono</label>
+            <input type="tel" id="pmTelefono" placeholder="Tel. de contacto">
+          </div>
+          <div class="form-group-adm">
+            <label>Email</label>
+            <input type="email" id="pmEmail" placeholder="paciente@email.com">
+          </div>
+          <div class="form-group-adm">
+            <label>DNI / LC / LE / CI</label>
+            <input type="text" id="pmDni" placeholder="N° de documento">
+          </div>
+          <!-- Campos ocultos de compatibilidad -->
+          <input type="hidden" id="pmEstadoCivil">
+          <input type="hidden" id="pmProfesion">
+          <input type="hidden" id="pmIndicacion">
+        </div>
+      </div>
+
+      <!-- ── REPRESENTANTE (menores / incapacitados) ── -->
+      <div class="ficha-section">
+        <div class="ficha-section__title">👨‍👩‍👧 Representante (en caso de menores o incapacitados)</div>
+        <div class="ficha-grid ficha-grid--3">
+          <div class="form-group-adm ficha-col--full">
+            <label>Nombre y apellido</label>
+            <input type="text" id="pmRepNombre" placeholder="Nombre del representante">
+          </div>
+          <div class="form-group-adm ficha-col--full">
+            <label>Domicilio</label>
+            <input type="text" id="pmRepDomicilio" placeholder="Domicilio del representante">
+          </div>
+          <div class="form-group-adm">
+            <label>DNI / LC / LE / CI</label>
+            <input type="text" id="pmRepDni" placeholder="N° documento">
+          </div>
+          <div class="form-group-adm">
+            <label>Relación con el paciente</label>
+            <input type="text" id="pmRepRelacion" placeholder="Padre, madre, tutor...">
+          </div>
+        </div>
+      </div>
+
+      <!-- ── ODONTOGRAMA ── -->
+      <div class="ficha-section">
+        <div class="ficha-section__title">🦷 Odontograma</div>
+        <div class="odontograma-wrap">
+          <div class="odontograma-legend">
+            <div class="odontograma-legend__item" data-pick="sano"><span class="od-dot od-dot--sano"></span>Sano</div>
+            <div class="odontograma-legend__item" data-pick="caries"><span class="od-dot od-dot--caries"></span>Caries</div>
+            <div class="odontograma-legend__item" data-pick="extraccion"><span class="od-dot od-dot--extraccion"></span>Extracción</div>
+            <div class="odontograma-legend__item" data-pick="obturacion"><span class="od-dot od-dot--obturacion"></span>Obturación</div>
+            <div class="odontograma-legend__item" data-pick="corona"><span class="od-dot od-dot--corona"></span>Corona</div>
+            <div class="odontograma-legend__item" data-pick="implante"><span class="od-dot od-dot--implante"></span>Implante</div>
+            <div class="odontograma-legend__item" data-pick="ausente"><span class="od-dot od-dot--ausente"></span>Ausente</div>
+          </div>
+          <div class="odontograma-container" id="odontogramaContainer">
+            <!-- Superior derecha (18-11) + Superior izquierda (21-28) -->
+            <div class="od-arch od-arch--top">
+              <div class="od-row od-row--nums">
+                <span>18</span><span>17</span><span>16</span><span>15</span><span>14</span><span>13</span><span>12</span><span>11</span>
+                <div class="od-separator"></div>
+                <span>21</span><span>22</span><span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span>
+              </div>
+              <div class="od-row od-row--teeth" id="odTopRow"></div>
+            </div>
+            <!-- Inferior izquierda (48-41) + Inferior derecha (31-38) -->
+            <div class="od-arch od-arch--bottom">
+              <div class="od-row od-row--teeth" id="odBotRow"></div>
+              <div class="od-row od-row--nums">
+                <span>48</span><span>47</span><span>46</span><span>45</span><span>44</span><span>43</span><span>42</span><span>41</span>
+                <div class="od-separator"></div>
+                <span>31</span><span>32</span><span>33</span><span>34</span><span>35</span><span>36</span><span>37</span><span>38</span>
+              </div>
+            </div>
+          </div>
+          <p style="font-size:11px;color:var(--adm-muted);margin-top:8px;text-align:center">Hacé clic en un diente para cambiar su estado</p>
+        </div>
+      </div>
+
+      <!-- ── ANAMNESIS ── -->
+      <div class="ficha-section">
+        <div class="ficha-section__title">📋 Anamnesis</div>
+        <div class="ficha-grid ficha-grid--2" style="margin-bottom:10px">
+          <div class="form-group-adm">
+            <label>Última consulta odontológica</label>
+            <input type="text" id="pmUltimaConsulta" placeholder="Fecha o descripción">
+          </div>
+          <div class="form-group-adm">
+            <label>Médico de cabecera Dr.</label>
+            <input type="text" id="pmMedicoCabecera" placeholder="Nombre del médico">
+          </div>
+          <div class="form-group-adm ficha-col--full">
+            <label>Tratamiento médico actual</label>
+            <input type="text" id="pmTratamientoMedico" placeholder="Descripción del tratamiento">
+          </div>
+          <div class="form-group-adm">
+            <label>Fecha de inicio tratamiento médico</label>
+            <input type="date" id="pmFechaInicioTrat">
+          </div>
+          <div class="form-group-adm">
+            <label>Medicación actual</label>
+            <input type="text" id="pmMedicacion" placeholder="Ibuprofeno, Amoxicilina...">
+          </div>
+        </div>
+        <div class="anamnesis-checks">
+          <div class="anam-row">
+            <span class="anam-label">Alergias:</span>
+            <label class="anam-check"><input type="checkbox" id="pmAlergNoNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmAlergSi"> Sí —</label>
+            <input type="text" id="pmAlergDesc" class="anam-input" placeholder="¿A qué?">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Cardiopatías:</span>
+            <label class="anam-check"><input type="checkbox" id="pmCardioNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmCardioSi"> Sí —</label>
+            <input type="text" id="pmCardioDesc" class="anam-input" placeholder="Especificar...">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Hipertensión:</span>
+            <label class="anam-check"><input type="checkbox" id="pmHiperNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmHiperSi"> Sí —</label>
+            <input type="text" id="pmHiperDesc" class="anam-input" placeholder="Especificar...">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Fiebre reumática:</span>
+            <label class="anam-check"><input type="checkbox" id="pmReumaNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmReumaSi"> Sí —</label>
+            <input type="text" id="pmReumaDesc" class="anam-input" placeholder="Especificar...">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Diabetes:</span>
+            <label class="anam-check"><input type="checkbox" id="pmDiabNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmDiabSi"> Sí —</label>
+            <input type="text" id="pmDiabDesc" class="anam-input" placeholder="Especificar...">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Enf. gastrointestinales:</span>
+            <label class="anam-check"><input type="checkbox" id="pmGastroNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmGastroSi"> Sí —</label>
+            <input type="text" id="pmGastroDesc" class="anam-input" placeholder="Especificar...">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Hepatitis:</span>
+            <label class="anam-check"><input type="checkbox" id="pmHepaNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmHepaSi"> Sí —</label>
+            <input type="text" id="pmHepaTipo" class="anam-input" placeholder="Tipo" style="max-width:90px">
+            <span style="font-size:12px;color:var(--adm-muted)">Fecha:</span>
+            <input type="text" id="pmHepaFecha" class="anam-input" placeholder="Fecha" style="max-width:110px">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">HIV:</span>
+            <label class="anam-check"><input type="checkbox" id="pmHivNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmHivSi"> Sí —</label>
+            <input type="text" id="pmHivDesc" class="anam-input" placeholder="Especificar...">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Embarazo:</span>
+            <label class="anam-check"><input type="checkbox" id="pmEmbarNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmEmbarSi"> Sí —</label>
+            <span style="font-size:12px;color:var(--adm-muted)">Mes:</span>
+            <input type="text" id="pmEmbarMes" class="anam-input" placeholder="Mes" style="max-width:80px">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Hemorragias:</span>
+            <label class="anam-check"><input type="checkbox" id="pmHemorrNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmHemorrSi"> Sí —</label>
+            <input type="text" id="pmHemorrDesc" class="anam-input" placeholder="Especificar...">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Bruxismo:</span>
+            <label class="anam-check"><input type="checkbox" id="pmBruxNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmBruxSi"> Sí —</label>
+            <input type="text" id="pmBruxDesc" class="anam-input" placeholder="Especificar...">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Cáncer:</span>
+            <label class="anam-check"><input type="checkbox" id="pmCancerNo"> No</label>
+            <label class="anam-check"><input type="checkbox" id="pmCancerSi"> Sí —</label>
+            <input type="text" id="pmCancerDesc" class="anam-input" placeholder="Especificar...">
+          </div>
+          <div class="anam-row" style="align-items:flex-start">
+            <span class="anam-label">Otras afecciones:</span>
+            <input type="text" id="pmOtrasAfecciones" class="anam-input" placeholder="Otras afecciones no listadas..." style="flex:1">
+          </div>
+          <div class="anam-row">
+            <span class="anam-label">Observaciones:</span>
+            <input type="text" id="pmObservaciones" class="anam-input" placeholder="Notas adicionales..." style="flex:1">
+          </div>
+        </div>
+        <!-- Campos de compatibilidad ocultos -->
+        <input type="hidden" id="pmAntiNo"><input type="hidden" id="pmAntiSi"><input type="hidden" id="pmAntiDesc">
+        <input type="hidden" id="pmAnestNo"><input type="hidden" id="pmAnestSi"><input type="hidden" id="pmAnestDesc">
+        <input type="hidden" id="pmSaludNo"><input type="hidden" id="pmSaludSi"><input type="hidden" id="pmSaludDesc">
+      </div>
+
+      <!-- ── PLAN DE TRATAMIENTO ── -->
+      <div class="ficha-section">
+        <div class="ficha-section__title" style="color:var(--adm-gold)">📝 Plan de tratamiento</div>
+        <div class="ficha-grid ficha-grid--2" style="margin-bottom:10px">
+          <div class="form-group-adm">
+            <label>Fecha inicio</label>
+            <input type="date" id="pmTratInicio">
+          </div>
+          <div class="form-group-adm">
+            <label>Fecha término estimado</label>
+            <input type="date" id="pmTratTermino">
+          </div>
+        </div>
+        <div class="form-group-adm">
+          <label>Descripción del plan de tratamiento</label>
+          <textarea id="pmHistorial" rows="6" placeholder="Detallá el plan de tratamiento: procedimientos, secuencia, materiales, observaciones clínicas..." style="width:100%;padding:10px 12px;border:1px solid var(--adm-border);border-radius:8px;background:var(--adm-surface);color:var(--adm-text);font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
+        </div>
+      </div>
+
+      <!-- ── TRABAJOS REALIZADOS ── -->
+      <div class="ficha-section">
+        <div class="ficha-section__title">🗂 Trabajos realizados</div>
+        <div style="overflow-x:auto">
+          <table id="trabajosTable" style="width:100%;border-collapse:collapse;font-size:13px">
+            <thead>
+              <tr style="background:var(--adm-surface-2,#f5f5f5)">
+                <th style="border:1px solid var(--adm-border);padding:7px 10px;text-align:left;font-weight:600;white-space:nowrap">Fecha</th>
+                <th style="border:1px solid var(--adm-border);padding:7px 10px;text-align:left;font-weight:600">Trabajo realizado</th>
+                <th style="border:1px solid var(--adm-border);padding:7px 10px;text-align:right;font-weight:600;white-space:nowrap">Debe</th>
+                <th style="border:1px solid var(--adm-border);padding:7px 10px;text-align:right;font-weight:600;white-space:nowrap">Haber</th>
+                <th style="border:1px solid var(--adm-border);padding:7px 10px;text-align:right;font-weight:600;white-space:nowrap">Saldo</th>
+                <th style="border:1px solid var(--adm-border);padding:4px 6px;text-align:center;width:32px"></th>
+              </tr>
+            </thead>
+            <tbody id="trabajosBody">
+              <!-- filas dinámicas -->
+            </tbody>
+          </table>
+        </div>
+        <button type="button" id="agregarTrabajoBtn" style="margin-top:10px;padding:6px 14px;border:1px dashed var(--adm-border);border-radius:6px;background:transparent;color:var(--adm-muted);cursor:pointer;font-size:13px">+ Agregar fila</button>
+      </div>
+
+    </div><!-- end modal__body -->
+    <div class="modal__footer" style="position:sticky;bottom:0;background:var(--adm-surface)">
+      <button class="modal-btn modal-btn--save" id="pmSaveBtn">💾 Guardar ficha</button>
+      <button class="modal-btn modal-btn--delete" id="pmDeleteBtn" style="display:none">Eliminar paciente</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL -->
+<div id="nuevoTurnoModal" class="modal" style="display:none">
+  <div class="modal__backdrop" id="nuevoTurnoBackdrop"></div>
+  <div class="modal__box nt-modal-box" style="max-width:620px;width:95%">
+    <div class="modal__header nt-header">
+      <div class="nt-header-inner">
+        <span class="nt-header-icon">📅</span>
+        <div>
+          <h2 style="margin:0;font-size:1.15rem">Nuevo turno</h2>
+          <p class="nt-header-sub">Completá los datos para agendar</p>
+        </div>
+      </div>
+      <button class="modal__close" id="nuevoTurnoClose">✕</button>
+    </div>
+    <div class="modal__body nt-body">
+
+      <!-- Sección paciente -->
+      <div class="nt-section-label">👤 Paciente</div>
+      <div class="nt-grid">
+        <div class="form-group-adm nt-full nt-autocomplete-wrap">
+          <label>Nombre completo <span class="nt-required">*</span></label>
+          <input type="text" id="ntNombre" placeholder="Buscar o escribir nombre…" autocomplete="off" required>
+          <ul id="ntPacientesSugg" class="nt-sugg-list" style="display:none"></ul>
+          <span class="nt-field-error" id="ntNombreErr"></span>
+        </div>
+        <div class="form-group-adm">
+          <label>Email</label>
+          <input type="email" id="ntEmail" placeholder="paciente@email.com">
+        </div>
+        <div class="form-group-adm">
+          <label>Teléfono</label>
+          <input type="tel" id="ntTelefono" placeholder="3411234567">
+        </div>
+      </div>
+
+      <!-- Sección turno -->
+      <div class="nt-section-label" style="margin-top:18px">🗓 Turno</div>
+      <div class="nt-grid">
+        <div class="form-group-adm">
+          <label>Fecha <span class="nt-required">*</span></label>
+          <input type="date" id="ntFecha" required>
+          <span class="nt-field-error" id="ntFechaErr"></span>
+        </div>
+        <div class="form-group-adm">
+          <label>Hora <span class="nt-required">*</span></label>
+          <input type="time" id="ntHora" required>
+          <span class="nt-field-error" id="ntHoraErr"></span>
+        </div>
+        <div class="form-group-adm">
+          <label>Servicio</label>
+          <select id="ntServicio">
+            <option value="">Sin especificar</option>
+            <option value="Consulta general">Consulta general</option>
+            <option value="Ortodoncia invisible">Ortodoncia invisible</option>
+            <option value="Implantes dentales">Implantes dentales</option>
+            <option value="Blanqueamiento dental">Blanqueamiento dental</option>
+            <option value="Odontopediatría">Odontopediatría</option>
+            <option value="Periodoncia">Periodoncia</option>
+            <option value="Rehabilitación oral">Rehabilitación oral</option>
+            <option value="Endodoncia">Endodoncia</option>
+            <option value="Cirugía oral">Cirugía oral</option>
+          </select>
+        </div>
+        <div class="form-group-adm">
+          <label>Médico</label>
+          <select id="ntMedico">
+            <option value="">Sin asignar</option>
+            <option value="dr-perez">Dr. Juan Pérez</option>
+            <option value="dra-lopez">Dra. Ana López</option>
+            <option value="dr-diaz">Dr. Carlos Díaz</option>
+          </select>
+        </div>
+        <div class="form-group-adm">
+          <label>Estado inicial</label>
+          <select id="ntEstado">
+            <option value="confirmado">✅ Confirmado</option>
+            <option value="pendiente">🕐 Pendiente</option>
+            <option value="completado">✓ Completado</option>
+            <option value="cancelado">✗ Cancelado</option>
+          </select>
+        </div>
+        <div class="form-group-adm nt-full">
+          <label>Notas internas</label>
+          <input type="text" id="ntNotas" placeholder="Observaciones, indicaciones previas…">
+        </div>
+      </div>
+    </div>
+    <div class="modal__footer nt-footer">
+      <button class="modal-btn" onclick="closeNuevoTurnoModal()" style="background:transparent;border:1px solid var(--adm-border);color:var(--adm-text)">Cancelar</button>
+      <button class="modal-btn modal-btn--save nt-save-btn" id="ntSaveBtn">✓ Crear turno</button>
+    </div>
+  </div>
+</div>
+
+<div id="turnoModal" class="modal" style="display:none">
+  <div class="modal__backdrop" id="modalBackdrop"></div>
+  <div class="modal__box">
+    <div class="modal__header">
+      <h2>Detalle del turno</h2>
+      <button class="modal__close" id="modalClose">✕</button>
+    </div>
+    <div class="modal__body" id="modalBody"></div>
+    <div class="modal__footer">
+      <select id="modalEstado" class="modal-select">
+        <option value="pendiente">Pendiente</option>
+        <option value="confirmado">Confirmado</option>
+        <option value="completado">Completado</option>
+        <option value="cancelado">Cancelado</option>
+      </select>
+      <button class="modal-btn modal-btn--save" id="modalSaveBtn">Guardar estado</button>
+      <button class="modal-btn modal-btn--delete" id="modalDeleteBtn">Eliminar</button>
+    </div>
+  </div>
+</div>
+
+<div id="toast" class="toast"></div>
+
+<script src="js/admin.js"></script>
+</body>
+</html>

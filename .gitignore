@@ -1,0 +1,25 @@
+# Dependencies
+node_modules/
+
+# Environment
+backend/.env
+.env
+
+# Database (generated at runtime)
+backend/amco.db
+backend/amco.db-shm
+backend/amco.db-wal
+
+# Logs
+*.log
+npm-debug.log*
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Editor
+.vscode/
+.idea/
+*.swp
+*.swo

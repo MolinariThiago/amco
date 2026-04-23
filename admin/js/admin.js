@@ -1,0 +1,1141 @@
+const SECTION_TITLES = {
+  dashboard:'Dashboard', turnos:'Turnos', eliminados:'Turnos eliminados',
+  analytics:'Analítica', usuarios:'Usuarios', pacientes:'Pacientes',
+  'historial-hoy':'Historial del día'
+}
+
+;
+const BASE_URL = "http://localhost:3001";
+'use strict';
+
+const State = {
+  token:null, username:null, role:null, medico:null, nombre:null,
+  section:'dashboard', turnos:[], eliminados:[], analytics:null,
+  currentTurno:null, calYear:new Date().getFullYear(), calMonth:new Date().getMonth(),
+  pacientes:[], _pacienteEditId:null, _odontograma:{},
+};
+
+const API = {
+  async req(method, path, body) {
+    const opts = { method, headers:{'Content-Type':'application/json'} };
+    if (State.token) opts.headers['Authorization'] = `Bearer ${State.token}`;
+    if (body) opts.body = JSON.stringify(body);
+    const res  = await fetch(BASE_URL + path, opts);
+    const data = await res.json().catch(()=>({}));
+    if (!res.ok) { if (res.status===401) handleLogout(); throw new Error(data.error||'Error del servidor'); }
+    return data;
+  },
+  login:      (u,p)  => API.req('POST',   '/api/admin/login', {username:u,password:p}),
+  turnos:     (p)    => API.req('GET',    `/api/turnos?${new URLSearchParams(p)}`),
+  patch:      (id,b) => API.req('PATCH',  `/api/turnos/${id}`, b),
+  del:        (id)   => API.req('DELETE', `/api/turnos/${id}`),
+  analytics:  ()     => API.req('GET',    '/api/analytics'),
+  getUsers:   ()     => API.req('GET',    '/api/users'),
+  addUser:    (b)    => API.req('POST',   '/api/users', b),
+  delUser:    (u)    => API.req('DELETE', `/api/users/${u}`),
+  getPacientes:    ()      => API.req('GET',    '/api/pacientes'),
+  addPaciente:     (b)     => API.req('POST',   '/api/pacientes', b),
+  patchPaciente:   (id, b) => API.req('PATCH',  `/api/pacientes/${id}`, b),
+  delPaciente:     (id)    => API.req('DELETE', `/api/pacientes/${id}`),
+  getPacientesHoy: ()      => API.req('GET',    '/api/pacientes/hoy'),
+};
+
+/* ── Toast ── */
+let toastTimer;
+function showToast(msg, type='default') {
+  const t = document.getElementById('toast');
+  if (!t) return;
+  clearTimeout(toastTimer);
+  t.textContent = msg;
+  t.className   = `toast ${type} visible`;
+  toastTimer = setTimeout(()=>t.classList.remove('visible'), 3400);
+}
+
+/* ── Login ── */
+document.getElementById('loginForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const btn   = document.getElementById('loginBtn');
+  const errEl = document.getElementById('loginError');
+  const user  = document.getElementById('loginUser').value.trim();
+  const pass  = document.getElementById('loginPass').value;
+  errEl.classList.remove('visible');
+  btn.disabled = true; btn.classList.add('loading');
+  try {
+    const data = await API.login(user, pass);
+    if (!data.token) throw new Error('Login inválido');
+    applySession(data); initPanel();
+  } catch(err) { errEl.textContent=err.message; errEl.classList.add('visible'); }
+  finally { btn.disabled=false; btn.classList.remove('loading'); }
+});
+
+function applySession(d) {
+  State.token=d.token; State.username=d.username; State.role=d.role;
+  State.medico=d.medico; State.nombre=d.nombre;
+  localStorage.setItem('amco_token', d.token);
+  localStorage.setItem('amco_username', d.username);
+  localStorage.setItem('amco_role', d.role);
+  localStorage.setItem('amco_medico', d.medico||'');
+  localStorage.setItem('amco_nombre', d.nombre||'');
+}
+
+function handleLogout() {
+  ['amco_token','amco_username','amco_role','amco_medico','amco_nombre'].forEach(k=>localStorage.removeItem(k));
+  State.token=State.username=State.role=State.medico=State.nombre=null;
+  document.getElementById('adminPanel').style.display  = 'none';
+  document.getElementById('loginScreen').style.display = 'flex';
+}
+document.getElementById('logoutBtn')?.addEventListener('click', handleLogout);
+
+(function restoreSession() {
+  const token = localStorage.getItem('amco_token');
+  if (!token) return;
+  State.token    = token;
+  State.username = localStorage.getItem('amco_username')||'';
+  State.role     = localStorage.getItem('amco_role')||'admin';
+  State.medico   = localStorage.getItem('amco_medico')||null;
+  State.nombre   = localStorage.getItem('amco_nombre')||'';
+  initPanel();
+})();
+
+/* ── Init panel ── */
+function initPanel() {
+  document.getElementById('loginScreen').style.display = 'none';
+  document.getElementById('adminPanel').style.display  = 'flex';
+  const nameEl   = document.getElementById('adminName');
+  const roleEl   = document.getElementById('adminRole');
+  const avatar   = document.getElementById('adminAvatar');
+  const displayName = State.nombre || State.username;
+  if (nameEl)  nameEl.textContent  = displayName;
+  if (roleEl)  roleEl.textContent  = State.role === 'admin' ? 'Administrador' : 'Doctor';
+  if (avatar)  avatar.textContent  = (displayName||'A')[0].toUpperCase();
+  const isDoctor = State.role === 'doctor';
+  document.querySelectorAll('[data-admin-only]').forEach(el => { el.style.display = isDoctor ? 'none' : ''; });
+  initSidebar(); initSidebarMobile();
+  navigateTo(isDoctor ? 'turnos' : 'dashboard');
+  document.getElementById('refreshBtn')?.addEventListener('click', ()=>{
+    const btn=document.getElementById('refreshBtn');
+    btn.classList.add('spinning');
+    loadCurrentSection().finally(()=>btn.classList.remove('spinning'));
+  });
+}
+
+/* ── Sidebar ── */
+function initSidebar() {
+  document.querySelectorAll('.sidebar__link').forEach(link => {
+    link.addEventListener('click', e => {
+      e.preventDefault();
+      const section = link.dataset.section;
+      if (!section) return;
+      if (State.role==='doctor' && ['dashboard','analytics','usuarios','pacientes'].includes(section)) {
+        showToast('Acceso restringido', 'error'); return;
+      }
+      navigateTo(section); closeSidebarMobile();
+    });
+  });
+}
+
+
+
+function navigateTo(section) {
+  State.section = section;
+  document.querySelectorAll('.sidebar__link').forEach(l=>l.classList.toggle('active', l.dataset.section===section));
+  document.querySelectorAll('.admin-section').forEach(s=>{ s.style.display = s.id===`section-${section}` ? 'block' : 'none'; });
+  const titleEl = document.getElementById('pageTitle');
+  if (titleEl) titleEl.textContent = SECTION_TITLES[section] || section;
+  loadCurrentSection();
+}
+
+async function loadCurrentSection() {
+  switch(State.section) {
+    case 'dashboard':     return loadDashboard();
+    case 'turnos':        return loadTurnos();
+    case 'eliminados':    return loadEliminados();
+    case 'analytics':     return loadAnalytics();
+    case 'usuarios':      return loadUsuarios();
+    case 'pacientes':     return loadPacientes();
+    case 'historial-hoy': return loadHistorialHoy();
+  }
+}
+
+function initSidebarMobile() {
+  const toggle=document.getElementById('sidebarToggle');
+  const sidebar=document.getElementById('sidebar');
+  const overlay=document.getElementById('sidebarOverlay');
+  toggle?.addEventListener('click',()=>{ sidebar.classList.toggle('open'); overlay.classList.toggle('visible'); });
+  overlay?.addEventListener('click', closeSidebarMobile);
+}
+function closeSidebarMobile() {
+  document.getElementById('sidebar')?.classList.remove('open');
+  document.getElementById('sidebarOverlay')?.classList.remove('visible');
+}
+
+/* ── Dashboard ── */
+async function loadDashboard() {
+  try {
+    const [td, ad] = await Promise.all([API.turnos({vista:'activos'}), API.analytics()]);
+    State.turnos=td.data; State.analytics=ad.data;
+    const a=State.analytics;
+    setText('kpiTurnos', a.turnosTotal);
+    setText('kpiHoy',    a.turnosHoy);
+    setText('kpiVisitas',a.pageviews.toLocaleString('es-AR'));
+    setText('kpiPend',   a.turnosPend);
+    const tbody=document.querySelector('#dashUltimosTurnos tbody');
+    if (tbody) tbody.innerHTML = a.ultimosTurnos.length
+      ? a.ultimosTurnos.map(t=>`<tr>
+          <td>${escHtml(t.nombre)}</td><td>${fmtFecha(t.fecha)}</td>
+          <td>${escHtml(t.servicio||'—')}</td><td>${badgeHtml(t.estado)}</td>
+        </tr>`).join('')
+      : '<tr><td colspan="4" class="table-loading">Sin turnos</td></tr>';
+    renderBarChart('serviciosChart', a.servicios.map(s=>({label:s.servicio,val:s.total})));
+    renderActivityChart('activityChart', a.visitasPorDia, 'navy');
+  } catch(err) { showToast('Error dashboard: '+err.message,'error'); }
+}
+
+/* ── Turnos + Calendario ── */
+async function loadTurnos() {
+  const search=document.getElementById('searchInput')?.value.trim()||'';
+  const from=document.getElementById('filterFrom')?.value||'';
+  const to=document.getElementById('filterTo')?.value||'';
+  const tbody=document.getElementById('turnosBody');
+  if (tbody) tbody.innerHTML='<tr><td colspan="9" class="table-loading">Cargando...</td></tr>';
+  try {
+    const data=await API.turnos({vista:'activos',search,from,to});
+    State.turnos=data.data;
+    renderCalendar();
+    renderTurnosTable(State.turnos);
+    const countEl=document.getElementById('totalCount');
+    if (countEl) countEl.textContent=`${State.turnos.length} turno${State.turnos.length!==1?'s':''}`;
+  } catch(err) { showToast('Error turnos: '+err.message,'error'); }
+}
+
+/* ── Calendario ── */
+function renderCalendar() {
+  const container = document.getElementById('calendarGrid');
+  if (!container) return;
+
+  const year  = State.calYear;
+  const month = State.calMonth;
+  const today = new Date();
+  const MESES = ['Enero','Febrero','Marzo','Abril','Mayo','Junio','Julio','Agosto','Septiembre','Octubre','Noviembre','Diciembre'];
+
+  const titleEl = document.getElementById('calTitle');
+  if (titleEl) titleEl.textContent = `${MESES[month]} ${year}`;
+
+  const tPorFecha = {};
+  State.turnos.forEach(t => {
+    if (!t.fecha) return;
+    const [y, m] = t.fecha.split('-').map(Number);
+    if (y === year && m - 1 === month) {
+      if (!tPorFecha[t.fecha]) tPorFecha[t.fecha] = [];
+      tPorFecha[t.fecha].push(t);
+    }
+  });
+  Object.values(tPorFecha).forEach(arr => arr.sort((a, b) => (a.hora||'').localeCompare(b.hora||'')));
+
+  const firstDay    = new Date(year, month, 1).getDay();
+  const daysInMonth = new Date(year, month + 1, 0).getDate();
+  const startOffset = firstDay === 0 ? 6 : firstDay - 1;
+
+  const MAX_VISIBLE = 3;
+  let html = '';
+
+  for (let i = 0; i < startOffset; i++) html += '<div class="cal-day cal-day--empty"></div>';
+
+  for (let d = 1; d <= daysInMonth; d++) {
+    const dateStr  = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+    const dayT     = tPorFecha[dateStr] || [];
+    const isToday  = today.getFullYear()===year && today.getMonth()===month && today.getDate()===d;
+    const dayOfWeek = new Date(year, month, d).getDay();
+    const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+
+    const classes = ['cal-day', isToday?'cal-day--today':'', isWeekend?'cal-day--weekend':''].filter(Boolean).join(' ');
+
+    const numHtml = `<div class="cal-day__num"><span>${d}</span></div>`;
+
+    const visible = dayT.slice(0, MAX_VISIBLE);
+    const hidden  = dayT.length - visible.length;
+
+    const chipsHtml = visible.map(t => {
+      const nombre  = escHtml(t.nombre || '—');
+      const hora    = t.hora || '';
+      const estado  = t.estado || 'pendiente';
+      const medicoS = t.medico ? ` · ${medicoShort(t.medico)}` : '';
+      const tooltip = `${hora}hs — ${t.nombre}${medicoS} (${estado})`;
+      return `<div class="cal-turno cal-turno--${estado}" title="${escHtml(tooltip)}" onclick="event.stopPropagation();openModal(${t.id})">
+        <span class="cal-turno__hora">${hora}</span>
+        <span class="cal-turno__nombre">${nombre}</span>
+      </div>`;
+    }).join('');
+
+    const masHtml = hidden > 0
+      ? `<div class="cal-turno cal-turno--mas" onclick="event.stopPropagation();calDayClick('${dateStr}')">+${hidden} más</div>`
+      : '';
+
+    html += `<div class="${classes}" data-date="${dateStr}" onclick="calDayClick('${dateStr}')">
+      ${numHtml}${chipsHtml}${masHtml}
+    </div>`;
+  }
+
+  container.innerHTML = html;
+}
+
+function medicoShort(m) {
+  return { 'dr-perez':'Pérez', 'dra-lopez':'López', 'dr-diaz':'Díaz' }[m] || '';
+}
+
+window.calDayClick = function(dateStr) {
+  document.querySelectorAll('.cal-day').forEach(el => el.classList.remove('cal-day--selected'));
+  document.querySelector(`.cal-day[data-date="${dateStr}"]`)?.classList.add('cal-day--selected');
+  const filtered = State.turnos.filter(t => t.fecha === dateStr);
+  renderTurnosTable(filtered.length ? filtered : State.turnos);
+  const countEl = document.getElementById('totalCount');
+  if (countEl) {
+    countEl.textContent = filtered.length
+      ? `${filtered.length} turno${filtered.length!==1?'s':''} — ${fmtFecha(dateStr)}`
+      : `${State.turnos.length} turnos`;
+  }
+};
+
+document.getElementById('calPrev')?.addEventListener('click', () => {
+  State.calMonth--;
+  if (State.calMonth < 0) { State.calMonth = 11; State.calYear--; }
+  renderCalendar();
+});
+document.getElementById('calNext')?.addEventListener('click', () => {
+  State.calMonth++;
+  if (State.calMonth > 11) { State.calMonth = 0; State.calYear++; }
+  renderCalendar();
+});
+document.getElementById('calToday')?.addEventListener('click', () => {
+  State.calYear  = new Date().getFullYear();
+  State.calMonth = new Date().getMonth();
+  renderCalendar();
+  renderTurnosTable(State.turnos);
+});
+
+/* Tabla turnos */
+function renderTurnosTable(turnos) {
+  const tbody=document.getElementById('turnosBody');
+  if (!tbody) return;
+  if (!turnos?.length) { tbody.innerHTML='<tr><td colspan="9" class="table-loading">No hay turnos.</td></tr>'; return; }
+  tbody.innerHTML=turnos.map(t=>`
+    <tr>
+      <td><strong style="color:var(--adm-gold)">#${String(t.id).slice(-5)}</strong></td>
+      <td>
+        <div style="font-weight:500">${escHtml(t.nombre)}</div>
+        <div style="font-size:11px;color:var(--adm-muted)">${escHtml(t.email||'')}</div>
+      </td>
+      <td>
+        <div style="font-weight:500">${fmtFecha(t.fecha)}</div>
+        <div style="font-size:12px;color:var(--adm-muted)">${t.hora} hs</div>
+      </td>
+      <td>${escHtml(t.servicio||'—')}</td>
+      <td>${escHtml(t.telefono||'—')}</td>
+      <td>${medicoLabel(t.medico)}</td>
+      <td>${badgeHtml(t.estado)}</td>
+      <td style="font-size:12px;color:var(--adm-muted)">${fmtDatetime(t.createdAt)}</td>
+      <td>
+        <button class="action-btn" onclick="openModal(${t.id})">
+          <svg viewBox="0 0 24 24" width="13" height="13"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+          Ver
+        </button>
+      </td>
+    </tr>`).join('');
+}
+
+function medicoLabel(m) {
+  const map={
+    'dr-perez': '<span class="medico-tag medico-tag--perez">Dr. Pérez</span>',
+    'dra-lopez':'<span class="medico-tag medico-tag--lopez">Dra. López</span>',
+    'dr-diaz':  '<span class="medico-tag medico-tag--diaz">Dr. Díaz</span>',
+  };
+  return map[m]||'<span style="font-size:11px;color:var(--adm-muted)">—</span>';
+}
+
+document.getElementById('filterBtn')?.addEventListener('click', loadTurnos);
+document.getElementById('clearFilterBtn')?.addEventListener('click',()=>{
+  ['searchInput','filterFrom','filterTo'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  loadTurnos();
+});
+document.getElementById('searchInput')?.addEventListener('keydown',e=>{if(e.key==='Enter')loadTurnos();});
+
+/* ── Eliminados ── */
+async function loadEliminados() {
+  const tbody=document.getElementById('eliminadosBody');
+  if(tbody) tbody.innerHTML='<tr><td colspan="7" class="table-loading">Cargando...</td></tr>';
+  try {
+    const data=await API.turnos({vista:'eliminados'});
+    State.eliminados=data.data;
+    if(!tbody) return;
+    tbody.innerHTML=!State.eliminados.length
+      ?'<tr><td colspan="7" class="table-loading">No hay turnos eliminados.</td></tr>'
+      :State.eliminados.map(t=>`<tr>
+          <td><strong>#${String(t.id).slice(-5)}</strong></td>
+          <td>${escHtml(t.nombre)}</td><td>${fmtFecha(t.fecha)}</td>
+          <td>${t.hora} hs</td><td>${escHtml(t.servicio||'—')}</td>
+          <td>${fmtDatetime(t.createdAt)}</td><td>${fmtDatetime(t.deletedAt)}</td>
+        </tr>`).join('');
+  } catch(err) { showToast('Error: '+err.message,'error'); }
+}
+
+/* ── Analytics ── */
+async function loadAnalytics() {
+  try {
+    const data=await API.analytics();
+    const a=data.data; State.analytics=a;
+    setText('anPageviews', a.pageviews.toLocaleString('es-AR'));
+    setText('anSessions',  a.sessions.toLocaleString('es-AR'));
+    setText('anTurnosSem', a.turnosSemana);
+    setText('anEliminados',a.eliminados);
+    renderActivityChart('visitasDiaChart',a.visitasPorDia,'navy');
+    renderBarChart('eventosChart',a.eventosPop.map(e=>({label:e.event,val:e.c})));
+    renderActivityChart('turnosDiaChart',a.turnosPorDia,'gold');
+  } catch(err) { showToast('Error analítica: '+err.message,'error'); }
+}
+
+/* ── Usuarios ── */
+async function loadUsuarios() {
+  const tbody=document.getElementById('usuariosBody');
+  if(tbody) tbody.innerHTML='<tr><td colspan="5" class="table-loading">Cargando...</td></tr>';
+  try {
+    const data=await API.getUsers();
+    if(!tbody) return;
+    tbody.innerHTML=data.data.map(u=>`<tr>
+      <td><strong>${escHtml(u.username)}</strong></td>
+      <td>${escHtml(u.nombre||'—')}</td>
+      <td>${u.role==='admin'
+        ?'<span class="role-tag role-tag--admin">Admin</span>'
+        :'<span class="role-tag role-tag--doctor">Doctor</span>'}</td>
+      <td>${medicoLabel(u.medico)}</td>
+      <td>${u.username==='admin'?'—':`<button class="action-btn action-btn--danger" onclick="deleteUser('${u.username}')">
+        <svg viewBox="0 0 24 24" width="12" height="12"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg> Eliminar</button>`}</td>
+    </tr>`).join('');
+  } catch(err) { showToast('Error: '+err.message,'error'); }
+}
+
+window.deleteUser = async function(username) {
+  if(!confirm(`¿Eliminar usuario "${username}"?`)) return;
+  try { await API.delUser(username); showToast('Usuario eliminado','success'); loadUsuarios(); }
+  catch(err) { showToast('Error: '+err.message,'error'); }
+};
+
+document.getElementById('addUserForm')?.addEventListener('submit', async e => {
+  e.preventDefault();
+  const username=document.getElementById('newUsername').value.trim();
+  const password=document.getElementById('newPassword').value.trim();
+  const nombre  =document.getElementById('newNombre').value.trim();
+  const role    =document.getElementById('newRole').value;
+  const medico  =document.getElementById('newMedico').value;
+  if(!username||!password) return showToast('Usuario y contraseña requeridos','error');
+  try {
+    await API.addUser({username,password,role,nombre,medico:medico||null});
+    showToast('Usuario creado','success'); e.target.reset(); loadUsuarios();
+  } catch(err) { showToast(err.message,'error'); }
+});
+
+document.getElementById('newRole')?.addEventListener('change', function() {
+  const g=document.getElementById('medicoGroup');
+  if(g) g.style.display=this.value==='doctor'?'block':'none';
+});
+
+/* ── Modal turno ── */
+window.openModal = function(id) {
+  const turno=State.turnos.find(t=>t.id===id);
+  if(!turno) return;
+  State.currentTurno=turno;
+  const body=document.getElementById('modalBody');
+  const estado=document.getElementById('modalEstado');
+  body.innerHTML=`<div class="modal-detail">
+    <div class="modal-row"><strong>Paciente</strong><span>${escHtml(turno.nombre)}</span></div>
+    <div class="modal-row"><strong>Email</strong><span>${escHtml(turno.email||'—')}</span></div>
+    <div class="modal-row"><strong>Teléfono</strong><span>${escHtml(turno.telefono||'—')}</span></div>
+    <div class="modal-row"><strong>Fecha</strong><span>${fmtFecha(turno.fecha)}</span></div>
+    <div class="modal-row"><strong>Hora</strong><span>${turno.hora} hs</span></div>
+    <div class="modal-row"><strong>Servicio</strong><span>${escHtml(turno.servicio||'—')}</span></div>
+    <div class="modal-row"><strong>Médico</strong><span>${medicoLabel(turno.medico)}</span></div>
+    <div class="modal-row"><strong>Estado</strong><span>${badgeHtml(turno.estado)}</span></div>
+    <div class="modal-row"><strong>Registrado</strong><span>${fmtDatetime(turno.createdAt)}</span></div>
+    ${turno.notas?`<div class="modal-row"><strong>Notas</strong><span>${escHtml(turno.notas)}</span></div>`:''}
+  </div>`;
+  if(estado) estado.value=turno.estado;
+  document.getElementById('turnoModal').style.display='flex';
+  document.body.style.overflow='hidden';
+};
+
+function closeModal() {
+  document.getElementById('turnoModal').style.display='none';
+  document.body.style.overflow=''; State.currentTurno=null;
+}
+document.getElementById('modalClose')?.addEventListener('click', closeModal);
+document.getElementById('modalBackdrop')?.addEventListener('click', closeModal);
+
+document.addEventListener('keydown', e=>{
+  if(e.key==='Escape') {
+    if(document.getElementById('turnoModal')?.style.display==='flex') closeModal();
+    if(document.getElementById('nuevoTurnoModal')?.style.display==='flex') closeNuevoTurnoModal();
+    if(document.getElementById('pacienteModal')?.style.display==='flex') closePacienteModal();
+  }
+});
+
+document.getElementById('modalSaveBtn')?.addEventListener('click', async()=>{
+  if(!State.currentTurno) return;
+  const estado=document.getElementById('modalEstado').value;
+  try { await API.patch(State.currentTurno.id,{estado}); showToast('Estado actualizado','success'); closeModal(); loadTurnos(); }
+  catch(err) { showToast('Error: '+err.message,'error'); }
+});
+
+document.getElementById('modalDeleteBtn')?.addEventListener('click', async()=>{
+  if(!State.currentTurno) return;
+  if(!confirm(`¿Eliminar turno de ${State.currentTurno.nombre}?`)) return;
+  try { await API.del(State.currentTurno.id); showToast('Turno eliminado','default'); closeModal(); loadTurnos(); }
+  catch(err) { showToast('Error: '+err.message,'error'); }
+});
+
+/* ── Charts ── */
+function renderBarChart(containerId, items) {
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  if(!items?.length){el.innerHTML='<p style="color:#6B7A8D;font-size:13px;padding:8px 0">Sin datos aún</p>';return;}
+  const max=Math.max(...items.map(i=>i.val),1);
+  el.innerHTML=items.slice(0,8).map(item=>`
+    <div class="bar-item">
+      <span class="bar-item__label" title="${escHtml(item.label)}">${escHtml(item.label)}</span>
+      <div class="bar-item__track"><div class="bar-item__fill" style="width:${Math.round((item.val/max)*100)}%"></div></div>
+      <span class="bar-item__val">${item.val}</span>
+    </div>`).join('');
+}
+
+function renderActivityChart(containerId, data, color='navy') {
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  if(!data?.length){el.innerHTML='<p style="color:#6B7A8D;font-size:13px;padding:8px 0">Sin datos aún</p>';return;}
+  const fills={navy:'var(--adm-navy)',gold:'var(--adm-gold)',sage:'var(--adm-sage)'};
+  const fill=fills[color]||fills.navy;
+  const sorted=[...data].sort((a,b)=>a.dia.localeCompare(b.dia)).slice(-30);
+  const max=Math.max(...sorted.map(d=>d.c),1);
+  el.innerHTML=sorted.map(d=>{
+    const h=Math.max(4,Math.round((d.c/max)*76));
+    return `<div class="activity-bar" title="${d.dia}: ${d.c}">
+      <div class="activity-bar__fill" style="height:${h}px;background:${fill}"></div>
+      <span class="activity-bar__lbl">${d.dia?d.dia.slice(5):''}</span>
+    </div>`;
+  }).join('');
+}
+
+/* ── Helpers ── */
+function escHtml(str){return String(str??'').replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[c]));}
+function setText(id,val){const el=document.getElementById(id);if(el)el.textContent=val??'—';}
+function fmtFecha(s){if(!s)return'—';const[y,m,d]=s.split('-');return`${d}/${m}/${y}`;}
+function fmtDatetime(s){if(!s)return'—';const d=new Date(s.replace(' ','T'));if(isNaN(d))return s;return d.toLocaleString('es-AR',{day:'2-digit',month:'2-digit',year:'numeric',hour:'2-digit',minute:'2-digit'});}
+function badgeHtml(e){const cls=['pendiente','confirmado','completado','cancelado'].includes(e)?e:'pendiente';return`<span class="badge badge--${cls}">${escHtml(e)}</span>`;}
+
+/* ══════════════════════════════════════════════════
+   PACIENTES
+══════════════════════════════════════════════════ */
+
+async function loadPacientes(query = '') {
+  const tbody = document.getElementById('pacientesBody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-loading">Cargando...</td></tr>';
+  try {
+    const data = await API.getPacientes();
+    let lista = data.data || [];
+    if (query) {
+      const q = query.toLowerCase();
+      lista = lista.filter(p =>
+        (p.nombre||'').toLowerCase().includes(q) ||
+        (p.email||'').toLowerCase().includes(q) ||
+        (p.dni||'').toLowerCase().includes(q) ||
+        (p.telefono||'').toLowerCase().includes(q)
+      );
+    }
+    State.pacientes = lista;
+    if (!tbody) return;
+    if (!lista.length) {
+      tbody.innerHTML = '<tr><td colspan="7" class="table-loading">No hay pacientes registrados.</td></tr>';
+      return;
+    }
+    tbody.innerHTML = lista.map(p => `
+      <tr>
+        <td><strong style="color:var(--adm-gold)">#${String(p.id).slice(-5)}</strong></td>
+        <td>
+          <div style="font-weight:500">${escHtml(p.nombre)}</div>
+          <div style="font-size:11px;color:var(--adm-muted)">${escHtml(p.email||'')}</div>
+        </td>
+        <td style="font-size:13px">${escHtml(p.dni||'—')}</td>
+        <td style="font-size:13px">${escHtml(p.telefono||'—')}</td>
+        <td style="font-size:13px">${p.fechaNacimiento ? fmtFecha(p.fechaNacimiento) : '—'}</td>
+        <td style="font-size:12px;color:var(--adm-muted)">${fmtDatetime(p.createdAt)}</td>
+        <td style="display:flex;gap:6px;flex-wrap:wrap">
+          <button class="action-btn" onclick="openPacienteModal(${p.id})">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg>
+            Editar
+          </button>
+          <button class="action-btn" onclick="openHistorial(${p.id})" style="background:var(--adm-sage);color:#fff;border-color:var(--adm-sage)">
+            <svg viewBox="0 0 24 24" width="13" height="13"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+            Historial
+          </button>
+        </td>
+      </tr>`).join('');
+  } catch(err) { showToast('Error pacientes: '+err.message, 'error'); }
+}
+
+document.getElementById('pacientesSearchBtn')?.addEventListener('click', () => {
+  loadPacientes(document.getElementById('pacientesSearch').value.trim());
+});
+document.getElementById('pacientesClearBtn')?.addEventListener('click', () => {
+  document.getElementById('pacientesSearch').value = '';
+  loadPacientes();
+});
+document.getElementById('pacientesSearch')?.addEventListener('keydown', e => {
+  if (e.key === 'Enter') loadPacientes(e.target.value.trim());
+});
+document.getElementById('nuevoPacienteBtn')?.addEventListener('click', () => openPacienteModal(null));
+
+window.openPacienteModal = function(id) {
+  State._pacienteEditId = id;
+  const p = id ? State.pacientes.find(x => x.id === id) : null;
+  document.getElementById('pacienteModalTitle').textContent = id ? 'Ficha clínica' : 'Nueva ficha clínica';
+
+  document.getElementById('pmNombre').value        = p?.nombre           || '';
+  document.getElementById('pmDni').value           = p?.dni              || '';
+  document.getElementById('pmEmail').value         = p?.email            || '';
+  document.getElementById('pmTelefono').value      = p?.telefono         || '';
+  document.getElementById('pmFechaNac').value      = p?.fechaNacimiento  || '';
+  document.getElementById('pmObservaciones').value = p?.observaciones    || '';
+  document.getElementById('pmHistorial').value     = p?.historialClinico || '';
+  document.getElementById('pmEstadoCivil').value   = p?.estadoCivil      || '';
+  document.getElementById('pmProfesion').value     = p?.profesion        || '';
+  document.getElementById('pmDireccion').value     = p?.direccion        || '';
+  document.getElementById('pmObrasocial').value    = p?.obrasocial       || '';
+  document.getElementById('pmIndicacion').value    = p?.indicacion       || '';
+  document.getElementById('pmMedicacion').value    = p?.medicacion       || '';
+  document.getElementById('pmTratInicio').value    = p?.tratInicio       || '';
+  document.getElementById('pmTratTermino').value   = p?.tratTermino      || '';
+  // Nuevos campos ficha física
+  document.getElementById('pmCredencial').value        = p?.credencial        || '';
+  document.getElementById('pmTitular').value           = p?.titular           || '';
+  document.getElementById('pmGrupoFamiliar').value     = p?.grupoFamiliar     || '';
+  document.getElementById('pmParentesco').value        = p?.parentesco        || '';
+  document.getElementById('pmEdad').value              = p?.edad              || '';
+  document.getElementById('pmLocalidad').value         = p?.localidad         || '';
+  document.getElementById('pmTrabajo').value           = p?.trabajo           || '';
+  document.getElementById('pmRepNombre').value         = p?.repNombre         || '';
+  document.getElementById('pmRepDomicilio').value      = p?.repDomicilio      || '';
+  document.getElementById('pmRepDni').value            = p?.repDni            || '';
+  document.getElementById('pmRepRelacion').value       = p?.repRelacion       || '';
+  document.getElementById('pmUltimaConsulta').value    = p?.ultimaConsulta    || '';
+  document.getElementById('pmMedicoCabecera').value    = p?.medicoCabecera    || '';
+  document.getElementById('pmTratamientoMedico').value = p?.tratamientoMedico || '';
+  document.getElementById('pmFechaInicioTrat').value   = p?.fechaInicioTrat   || '';
+
+  const an = p?.anamnesis || {};
+  document.getElementById('pmAlergNoNo').checked = an.alergNo  || false;
+  document.getElementById('pmAlergSi').checked   = an.alergSi  || false;
+  document.getElementById('pmAlergDesc').value   = an.alergDesc || '';
+  document.getElementById('pmAntiNo').checked    = an.antiNo   || false;
+  document.getElementById('pmAntiSi').checked    = an.antiSi   || false;
+  document.getElementById('pmAntiDesc').value    = an.antiDesc || '';
+  document.getElementById('pmAnestNo').checked   = an.anestNo  || false;
+  document.getElementById('pmAnestSi').checked   = an.anestSi  || false;
+  document.getElementById('pmAnestDesc').value   = an.anestDesc|| '';
+  document.getElementById('pmSaludNo').checked   = an.saludNo  || false;
+  document.getElementById('pmSaludSi').checked   = an.saludSi  || false;
+  document.getElementById('pmSaludDesc').value   = an.saludDesc|| '';
+  // Nuevos campos anamnesis
+  document.getElementById('pmCardioNo').checked  = an.cardioNo  || false;
+  document.getElementById('pmCardioSi').checked  = an.cardioSi  || false;
+  document.getElementById('pmCardioDesc').value  = an.cardioDesc|| '';
+  document.getElementById('pmHiperNo').checked   = an.hiperNo   || false;
+  document.getElementById('pmHiperSi').checked   = an.hiperSi   || false;
+  document.getElementById('pmHiperDesc').value   = an.hiperDesc || '';
+  document.getElementById('pmReumaNo').checked   = an.reumaNo   || false;
+  document.getElementById('pmReumaSi').checked   = an.reumaSi   || false;
+  document.getElementById('pmReumaDesc').value   = an.reumaDesc || '';
+  document.getElementById('pmDiabNo').checked    = an.diabNo    || false;
+  document.getElementById('pmDiabSi').checked    = an.diabSi    || false;
+  document.getElementById('pmDiabDesc').value    = an.diabDesc  || '';
+  document.getElementById('pmGastroNo').checked  = an.gastroNo  || false;
+  document.getElementById('pmGastroSi').checked  = an.gastroSi  || false;
+  document.getElementById('pmGastroDesc').value  = an.gastroDesc|| '';
+  document.getElementById('pmHepaNo').checked    = an.hepaNo    || false;
+  document.getElementById('pmHepaSi').checked    = an.hepaSi    || false;
+  document.getElementById('pmHepaTipo').value    = an.hepaTipo  || '';
+  document.getElementById('pmHepaFecha').value   = an.hepaFecha || '';
+  document.getElementById('pmHivNo').checked     = an.hivNo     || false;
+  document.getElementById('pmHivSi').checked     = an.hivSi     || false;
+  document.getElementById('pmHivDesc').value     = an.hivDesc   || '';
+  document.getElementById('pmEmbarNo').checked   = an.embarNo   || false;
+  document.getElementById('pmEmbarSi').checked   = an.embarSi   || false;
+  document.getElementById('pmEmbarMes').value    = an.embarMes  || '';
+  document.getElementById('pmHemorrNo').checked  = an.hemorrNo  || false;
+  document.getElementById('pmHemorrSi').checked  = an.hemorrSi  || false;
+  document.getElementById('pmHemorrDesc').value  = an.hemorrDesc|| '';
+  document.getElementById('pmBruxNo').checked    = an.bruxNo    || false;
+  document.getElementById('pmBruxSi').checked    = an.bruxSi    || false;
+  document.getElementById('pmBruxDesc').value    = an.bruxDesc  || '';
+  document.getElementById('pmCancerNo').checked  = an.cancerNo  || false;
+  document.getElementById('pmCancerSi').checked  = an.cancerSi  || false;
+  document.getElementById('pmCancerDesc').value  = an.cancerDesc|| '';
+  document.getElementById('pmOtrasAfecciones').value = an.otrasAfecciones || '';
+  // Cargar tabla de trabajos
+  renderTrabajosTable(p?.trabajos || []);
+
+  initOdontograma(p?.odontograma || {});
+
+  document.getElementById('pmDeleteBtn').style.display = id ? 'inline-flex' : 'none';
+  document.getElementById('pacienteModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+};
+
+window.openHistorial = function(id) {
+  openPacienteModal(id);
+  setTimeout(() => document.getElementById('pmHistorial')?.scrollIntoView({behavior:'smooth', block:'center'}), 300);
+};
+
+function closePacienteModal() {
+  document.getElementById('pacienteModal').style.display = 'none';
+  document.body.style.overflow = '';
+  State._pacienteEditId = null;
+}
+document.getElementById('pacienteModalClose')?.addEventListener('click', closePacienteModal);
+document.getElementById('pacienteModalBackdrop')?.addEventListener('click', closePacienteModal);
+
+document.getElementById('pmSaveBtn')?.addEventListener('click', async () => {
+  const nombre = document.getElementById('pmNombre').value.trim();
+  if (!nombre) { showToast('El nombre es obligatorio', 'error'); return; }
+  const body = {
+    nombre,
+    dni:              document.getElementById('pmDni').value.trim(),
+    email:            document.getElementById('pmEmail').value.trim(),
+    telefono:         document.getElementById('pmTelefono').value.trim(),
+    fechaNacimiento:  document.getElementById('pmFechaNac').value,
+    observaciones:    document.getElementById('pmObservaciones').value.trim(),
+    historialClinico: document.getElementById('pmHistorial').value.trim(),
+    estadoCivil:      document.getElementById('pmEstadoCivil').value,
+    profesion:        document.getElementById('pmProfesion').value.trim(),
+    direccion:        document.getElementById('pmDireccion').value.trim(),
+    obrasocial:       document.getElementById('pmObrasocial').value.trim(),
+    indicacion:       document.getElementById('pmIndicacion').value.trim(),
+    medicacion:       document.getElementById('pmMedicacion').value.trim(),
+    tratInicio:       document.getElementById('pmTratInicio').value,
+    tratTermino:      document.getElementById('pmTratTermino').value,
+    // Nuevos campos
+    credencial:       document.getElementById('pmCredencial').value.trim(),
+    titular:          document.getElementById('pmTitular').value.trim(),
+    grupoFamiliar:    document.getElementById('pmGrupoFamiliar').value.trim(),
+    parentesco:       document.getElementById('pmParentesco').value.trim(),
+    edad:             document.getElementById('pmEdad').value.trim(),
+    localidad:        document.getElementById('pmLocalidad').value.trim(),
+    trabajo:          document.getElementById('pmTrabajo').value.trim(),
+    repNombre:        document.getElementById('pmRepNombre').value.trim(),
+    repDomicilio:     document.getElementById('pmRepDomicilio').value.trim(),
+    repDni:           document.getElementById('pmRepDni').value.trim(),
+    repRelacion:      document.getElementById('pmRepRelacion').value.trim(),
+    ultimaConsulta:   document.getElementById('pmUltimaConsulta').value.trim(),
+    medicoCabecera:   document.getElementById('pmMedicoCabecera').value.trim(),
+    tratamientoMedico:document.getElementById('pmTratamientoMedico').value.trim(),
+    fechaInicioTrat:  document.getElementById('pmFechaInicioTrat').value,
+    trabajos:         getTrabajosData(),
+    anamnesis: {
+      alergNo:  document.getElementById('pmAlergNoNo').checked,
+      alergSi:  document.getElementById('pmAlergSi').checked,
+      alergDesc:document.getElementById('pmAlergDesc').value.trim(),
+      antiNo:   document.getElementById('pmAntiNo').checked,
+      antiSi:   document.getElementById('pmAntiSi').checked,
+      antiDesc: document.getElementById('pmAntiDesc').value.trim(),
+      anestNo:  document.getElementById('pmAnestNo').checked,
+      anestSi:  document.getElementById('pmAnestSi').checked,
+      anestDesc:document.getElementById('pmAnestDesc').value.trim(),
+      saludNo:  document.getElementById('pmSaludNo').checked,
+      saludSi:  document.getElementById('pmSaludSi').checked,
+      saludDesc:document.getElementById('pmSaludDesc').value.trim(),
+      cardioNo: document.getElementById('pmCardioNo').checked,
+      cardioSi: document.getElementById('pmCardioSi').checked,
+      cardioDesc:document.getElementById('pmCardioDesc').value.trim(),
+      hiperNo:  document.getElementById('pmHiperNo').checked,
+      hiperSi:  document.getElementById('pmHiperSi').checked,
+      hiperDesc:document.getElementById('pmHiperDesc').value.trim(),
+      reumaNo:  document.getElementById('pmReumaNo').checked,
+      reumaSi:  document.getElementById('pmReumaSi').checked,
+      reumaDesc:document.getElementById('pmReumaDesc').value.trim(),
+      diabNo:   document.getElementById('pmDiabNo').checked,
+      diabSi:   document.getElementById('pmDiabSi').checked,
+      diabDesc: document.getElementById('pmDiabDesc').value.trim(),
+      gastroNo: document.getElementById('pmGastroNo').checked,
+      gastroSi: document.getElementById('pmGastroSi').checked,
+      gastroDesc:document.getElementById('pmGastroDesc').value.trim(),
+      hepaNo:   document.getElementById('pmHepaNo').checked,
+      hepaSi:   document.getElementById('pmHepaSi').checked,
+      hepaTipo: document.getElementById('pmHepaTipo').value.trim(),
+      hepaFecha:document.getElementById('pmHepaFecha').value.trim(),
+      hivNo:    document.getElementById('pmHivNo').checked,
+      hivSi:    document.getElementById('pmHivSi').checked,
+      hivDesc:  document.getElementById('pmHivDesc').value.trim(),
+      embarNo:  document.getElementById('pmEmbarNo').checked,
+      embarSi:  document.getElementById('pmEmbarSi').checked,
+      embarMes: document.getElementById('pmEmbarMes').value.trim(),
+      hemorrNo: document.getElementById('pmHemorrNo').checked,
+      hemorrSi: document.getElementById('pmHemorrSi').checked,
+      hemorrDesc:document.getElementById('pmHemorrDesc').value.trim(),
+      bruxNo:   document.getElementById('pmBruxNo').checked,
+      bruxSi:   document.getElementById('pmBruxSi').checked,
+      bruxDesc: document.getElementById('pmBruxDesc').value.trim(),
+      cancerNo: document.getElementById('pmCancerNo').checked,
+      cancerSi: document.getElementById('pmCancerSi').checked,
+      cancerDesc:document.getElementById('pmCancerDesc').value.trim(),
+      otrasAfecciones:document.getElementById('pmOtrasAfecciones').value.trim(),
+    },
+    odontograma: State._odontograma || {},
+  };
+  const saveBtn = document.getElementById('pmSaveBtn');
+  saveBtn.disabled = true;
+  saveBtn.innerHTML = '<span class="btn-spinner"></span> Guardando…';
+  try {
+    if (State._pacienteEditId) {
+      await API.patchPaciente(State._pacienteEditId, body);
+      showToast('Ficha actualizada', 'success');
+    } else {
+      await API.addPaciente(body);
+      showToast('Paciente creado', 'success');
+    }
+    closePacienteModal();
+    loadPacientes();
+  } catch(err) { showToast('Error: '+err.message, 'error'); }
+  finally { saveBtn.disabled = false; saveBtn.innerHTML = '💾 Guardar ficha'; }
+});
+
+document.getElementById('pmDeleteBtn')?.addEventListener('click', async () => {
+  if (!State._pacienteEditId) return;
+  const p = State.pacientes.find(x => x.id === State._pacienteEditId);
+  if (!confirm(`¿Eliminar al paciente "${p?.nombre}"? Esta acción no se puede deshacer.`)) return;
+  try {
+    await API.delPaciente(State._pacienteEditId);
+    showToast('Paciente eliminado', 'default');
+    closePacienteModal();
+    loadPacientes();
+  } catch(err) { showToast('Error: '+err.message, 'error'); }
+});
+
+/* ══════════════════════════════════════════════════
+   ODONTOGRAMA INTERACTIVO
+══════════════════════════════════════════════════ */
+const TOOTH_ESTADOS = ['sano', 'caries', 'obturacion', 'corona', 'implante', 'extraccion', 'ausente'];
+const TOOTH_ICONS   = { sano:'🦷', caries:'🔴', obturacion:'🔵', corona:'👑', implante:'🟢', extraccion:'✖', ausente:'⬜' };
+const TOOTH_LABELS  = { sano:'Sano', caries:'Caries', obturacion:'Obturación', corona:'Corona', implante:'Implante', extraccion:'Extracción', ausente:'Ausente' };
+
+const TOP_TEETH = [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28];
+const BOT_TEETH = [48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38];
+
+// Estado activo seleccionado en la leyenda
+let _odPickState = 'caries';
+
+function initOdontograma(data) {
+  State._odontograma = { ...data };
+  renderOdontogramaRow('odTopRow', TOP_TEETH);
+  renderOdontogramaRow('odBotRow', BOT_TEETH);
+  _initOdLegend();
+  _initAnamnesisHighlight();
+}
+
+function _initOdLegend() {
+  document.querySelectorAll('.odontograma-legend__item').forEach(item => {
+    // Quitamos listener viejo clonando el nodo
+    const fresh = item.cloneNode(true);
+    item.parentNode.replaceChild(fresh, item);
+    fresh.classList.add('od-pick--' + fresh.dataset.pick);
+    if (fresh.dataset.pick === _odPickState) fresh.classList.add('od-legend--active');
+    fresh.addEventListener('click', () => {
+      document.querySelectorAll('.odontograma-legend__item').forEach(i => i.classList.remove('od-legend--active'));
+      fresh.classList.add('od-legend--active');
+      _odPickState = fresh.dataset.pick;
+    });
+  });
+}
+
+function _initAnamnesisHighlight() {
+  document.querySelectorAll('.anam-row').forEach(row => {
+    const siCb = row.querySelector('input[id$="Si"]');
+    if (!siCb) return;
+    const sync = () => row.classList.toggle('anam-row--si', siCb.checked);
+    siCb.removeEventListener('change', sync);
+    siCb.addEventListener('change', sync);
+    sync();
+  });
+}
+
+function renderOdontogramaRow(containerId, teeth) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const midIdx = 8;
+  el.innerHTML = teeth.map((num, i) => {
+    const estado = State._odontograma[num] || 'sano';
+    const sep = i === midIdx ? '<div class="od-separator" style="height:56px"></div>' : '';
+    const label = TOOTH_LABELS[estado] || estado;
+    return `${sep}<div class="od-tooth" data-tooth="${num}" data-estado="${estado}" data-label="${label}" onclick="cycleToothState(${num})">
+      <span class="od-tooth__icon">${TOOTH_ICONS[estado]||'🦷'}</span>
+      <span class="od-tooth__num">${num}</span>
+    </div>`;
+  }).join('');
+}
+
+window.cycleToothState = function(num) {
+  // Aplica el estado seleccionado en la leyenda directamente
+  const next = _odPickState;
+  State._odontograma[num] = next;
+  const el = document.querySelector(`.od-tooth[data-tooth="${num}"]`);
+  if (el) {
+    el.dataset.estado = next;
+    el.dataset.label  = TOOTH_LABELS[next] || next;
+    el.querySelector('.od-tooth__icon').textContent = TOOTH_ICONS[next] || '🦷';
+    // Micro animación
+    el.animate([{transform:'scale(1.2)'},{transform:'scale(1)'}], {duration:180, easing:'ease-out'});
+  }
+};
+
+/* ══════════════════════════════════════════════════
+   NUEVO TURNO MANUAL
+══════════════════════════════════════════════════ */
+function openNuevoTurnoModal() {
+  ['ntNombre','ntEmail','ntTelefono','ntNotas'].forEach(id => { const el=document.getElementById(id); if(el) el.value=''; });
+  document.getElementById('ntFecha').value    = new Date().toISOString().slice(0,10);
+  document.getElementById('ntHora').value     = '';
+  document.getElementById('ntServicio').value = '';
+  document.getElementById('ntMedico').value   = '';
+  document.getElementById('ntEstado').value   = 'confirmado';
+  document.querySelectorAll('.nt-field-error').forEach(el => el.textContent = '');
+  document.querySelectorAll('#nuevoTurnoModal .form-group-adm input, #nuevoTurnoModal .form-group-adm select').forEach(el => el.classList.remove('input-error'));
+  document.getElementById('nuevoTurnoModal').style.display = 'flex';
+  document.body.style.overflow = 'hidden';
+  setTimeout(() => document.getElementById('ntNombre')?.focus(), 80);
+  // Pre-cargar pacientes si no están en memoria
+  if (!State.pacientes || State.pacientes.length === 0) {
+    API.getPacientes().then(r => { if (r?.data) State.pacientes = r.data; }).catch(()=>{});
+  }
+}
+
+document.getElementById('nuevoTurnoBtn')?.addEventListener('click', openNuevoTurnoModal);
+
+function closeNuevoTurnoModal() {
+  const modal = document.getElementById('nuevoTurnoModal');
+  modal.classList.add('modal--closing');
+  setTimeout(() => { modal.style.display='none'; modal.classList.remove('modal--closing'); document.body.style.overflow=''; }, 180);
+}
+document.getElementById('nuevoTurnoClose')?.addEventListener('click', closeNuevoTurnoModal);
+document.getElementById('nuevoTurnoBackdrop')?.addEventListener('click', closeNuevoTurnoModal);
+window.closeNuevoTurnoModal = closeNuevoTurnoModal;
+
+// Autocompletar pacientes
+document.getElementById('ntNombre')?.addEventListener('input', function() {
+  const q = this.value.toLowerCase().trim();
+  const list = document.getElementById('ntPacientesSugg');
+  if (!list) return;
+  if (!q || q.length < 2) { list.style.display='none'; return; }
+  const matches = (State.pacientes||[]).filter(p => p.nombre.toLowerCase().includes(q)).slice(0,6);
+  if (!matches.length) { list.style.display='none'; return; }
+  list.innerHTML = matches.map(p =>
+    `<li class="nt-sugg-item" data-nombre="${escHtml(p.nombre)}" data-email="${escHtml(p.email||'')}" data-tel="${escHtml(p.telefono||'')}">
+      <span class="nt-sugg-nombre">${escHtml(p.nombre)}</span>
+      ${p.telefono?`<span class="nt-sugg-meta">${escHtml(p.telefono)}</span>`:''}
+    </li>`
+  ).join('');
+  list.style.display = 'block';
+});
+
+document.getElementById('ntPacientesSugg')?.addEventListener('click', function(e) {
+  const item = e.target.closest('.nt-sugg-item');
+  if (!item) return;
+  document.getElementById('ntNombre').value   = item.dataset.nombre;
+  document.getElementById('ntEmail').value    = item.dataset.email;
+  document.getElementById('ntTelefono').value = item.dataset.tel;
+  this.style.display = 'none';
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('#ntNombre') && !e.target.closest('#ntPacientesSugg')) {
+    const s = document.getElementById('ntPacientesSugg'); if(s) s.style.display='none';
+  }
+});
+
+function ntSetFieldError(fieldId, msg) {
+  const el = document.getElementById(fieldId);
+  const err = document.getElementById(fieldId+'Err');
+  if (el) el.classList.toggle('input-error', !!msg);
+  if (err) err.textContent = msg || '';
+}
+
+document.getElementById('ntSaveBtn')?.addEventListener('click', async () => {
+  const nombre   = document.getElementById('ntNombre').value.trim();
+  const fecha    = document.getElementById('ntFecha').value;
+  const hora     = document.getElementById('ntHora').value;
+  const servicio = document.getElementById('ntServicio').value;
+  const medico   = document.getElementById('ntMedico').value;
+  const estado   = document.getElementById('ntEstado').value;
+  const email    = document.getElementById('ntEmail').value.trim();
+  const telefono = document.getElementById('ntTelefono').value.trim();
+  const notas    = document.getElementById('ntNotas').value.trim();
+
+  let valid = true;
+  ntSetFieldError('ntNombre', nombre ? '' : 'El nombre es obligatorio');   if (!nombre) valid=false;
+  ntSetFieldError('ntFecha',  fecha  ? '' : 'Seleccioná una fecha');       if (!fecha)  valid=false;
+  ntSetFieldError('ntHora',   hora   ? '' : 'Indicá la hora del turno');   if (!hora)   valid=false;
+  if (!valid) return;
+
+  const btn = document.getElementById('ntSaveBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="btn-spinner"></span> Guardando…';
+
+  try {
+    const res = await API.req('POST', '/api/admin/turnos', { nombre, email, telefono, fecha, hora, servicio, medico, estado, notas });
+    if (res.error) throw new Error(res.error);
+    showToast('✓ Turno creado correctamente', 'success');
+    closeNuevoTurnoModal();
+    loadTurnos();
+  } catch(err) {
+    showToast('Error: '+(err.message||'Inténtalo de nuevo'), 'error');
+  } finally {
+    btn.disabled = false;
+    btn.innerHTML = '✓ Crear turno';
+  }
+});
+
+/* ══════════════════════════════════════════════════
+   HISTORIAL DEL DÍA
+══════════════════════════════════════════════════ */
+
+const ESTADO_LABELS = {
+  pendiente:  { label: 'Pendiente',  color: '#C47A1E' },
+  confirmado: { label: 'Confirmado', color: '#1A6B3C' },
+  completado: { label: 'Completado', color: '#1A5BA8' },
+  cancelado:  { label: 'Cancelado',  color: '#A82A2A' },
+};
+
+async function loadHistorialHoy() {
+  const lista   = document.getElementById('historialHoyLista');
+  const fechaEl = document.getElementById('historialHoyFecha');
+  if (!lista) return;
+  lista.innerHTML = '<div style="text-align:center;padding:40px;color:var(--adm-muted)">Cargando...</div>';
+  try {
+    const data  = await API.getPacientesHoy();
+    const items = data.data || [];
+    const fecha = data.fecha || new Date().toISOString().slice(0,10);
+    const [y,m,d] = fecha.split('-');
+    if (fechaEl) fechaEl.textContent = `Turnos y historial clínico del día — ${d}/${m}/${y}`;
+
+    if (!items.length) {
+      lista.innerHTML = `
+        <div style="text-align:center;padding:60px 20px;color:var(--adm-muted)">
+          <svg viewBox="0 0 24 24" width="40" height="40" style="opacity:.3;margin-bottom:12px"><path d="M14 2H6a2 2 0 00-2 2v16a2 2 0 002 2h12a2 2 0 002-2V8z"/><path d="M14 2v6h6M16 13H8M16 17H8M10 9H8"/></svg>
+          <div style="font-size:15px;font-weight:500;margin-bottom:4px">Sin turnos hoy</div>
+          <div style="font-size:13px">No hay turnos agendados para hoy.</div>
+        </div>`;
+      return;
+    }
+
+    lista.innerHTML = items.map(item => {
+      const t = item.turno;
+      const p = item.paciente;
+      const est = ESTADO_LABELS[t.estado] || { label: t.estado || '—', color: '#888' };
+      const historial    = (p.historialClinico || '').trim();
+      const observaciones= (p.observaciones || '').trim();
+      const medicacion   = (p.medicacion || '').trim();
+      return `
+        <div class="historial-card">
+          <div style="display:flex;align-items:center;gap:14px;flex-wrap:wrap;padding:14px 18px;background:var(--adm-bg);border-bottom:1px solid var(--adm-border)">
+            <div style="font-size:22px;font-weight:700;color:var(--adm-gold);min-width:52px;text-align:center;background:rgba(180,145,80,.1);border-radius:8px;padding:4px 10px">${escHtml(t.hora||'—')}</div>
+            <div style="flex:1;min-width:160px">
+              <div style="font-weight:600;font-size:15px;color:var(--adm-text)">${escHtml(p.nombre||'—')}</div>
+              <div style="font-size:12px;color:var(--adm-muted);margin-top:2px">
+                ${p.telefono ? '📞 '+escHtml(p.telefono) : ''}
+                ${p.obrasocial ? ' · '+escHtml(p.obrasocial) : ''}
+                ${p.dni ? ' · DNI '+escHtml(p.dni) : ''}
+              </div>
+            </div>
+            <div style="display:flex;align-items:center;gap:10px;flex-wrap:wrap">
+              ${t.servicio ? `<span style="font-size:12px;background:rgba(100,120,160,.1);color:var(--adm-muted);border-radius:6px;padding:3px 10px">${escHtml(t.servicio)}</span>` : ''}
+              <span style="font-size:12px;font-weight:600;border-radius:6px;padding:3px 10px;background:${est.color}22;color:${est.color}">${est.label}</span>
+            </div>
+          </div>
+          <div style="padding:16px 18px;display:flex;flex-direction:column;gap:12px">
+            ${historial ? `
+            <div>
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--adm-muted);margin-bottom:6px">📋 Historial clínico</div>
+              <div style="font-size:13px;line-height:1.65;color:var(--adm-text);background:var(--adm-bg);border-radius:8px;padding:12px 14px;border:1px solid var(--adm-border);white-space:pre-wrap;max-height:180px;overflow-y:auto">${escHtml(historial)}</div>
+            </div>` : `<div style="font-size:13px;color:var(--adm-muted);font-style:italic">Sin historial clínico registrado.</div>`}
+            ${observaciones ? `
+            <div>
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--adm-muted);margin-bottom:6px">📝 Observaciones</div>
+              <div style="font-size:13px;color:var(--adm-text);line-height:1.6;white-space:pre-wrap">${escHtml(observaciones)}</div>
+            </div>` : ''}
+            ${medicacion ? `
+            <div>
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--adm-muted);margin-bottom:6px">💊 Medicación</div>
+              <div style="font-size:13px;color:var(--adm-text);line-height:1.6">${escHtml(medicacion)}</div>
+            </div>` : ''}
+            ${t.notas ? `
+            <div>
+              <div style="font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.08em;color:var(--adm-muted);margin-bottom:6px">🗒️ Notas del turno</div>
+              <div style="font-size:13px;color:var(--adm-text);line-height:1.6;font-style:italic">${escHtml(t.notas)}</div>
+            </div>` : ''}
+          </div>
+        </div>`;
+    }).join('');
+
+  } catch(err) {
+    lista.innerHTML = `<div style="text-align:center;padding:40px;color:var(--adm-muted)">Error al cargar: ${escHtml(err.message)}</div>`;
+    showToast('Error historial: '+err.message, 'error');
+  }
+}
+
+// ── TABLA DE TRABAJOS REALIZADOS ──────────────────────────────────────────
+function renderTrabajosTable(trabajos) {
+  const tbody = document.getElementById('trabajosBody');
+  if (!tbody) return;
+  tbody.innerHTML = '';
+  if (!trabajos || trabajos.length === 0) {
+    addTrabajoRow(tbody, { fecha: '', trabajo: '', debe: '', haber: '', saldo: '' });
+  } else {
+    trabajos.forEach(t => addTrabajoRow(tbody, t));
+  }
+}
+
+function addTrabajoRow(tbody, data) {
+  const tr = document.createElement('tr');
+  tr.innerHTML = `
+    <td style="border:1px solid var(--adm-border);padding:4px 6px">
+      <input type="date" value="${data.fecha||''}" class="trab-fecha" style="border:none;background:transparent;width:130px;color:var(--adm-text);font-size:13px">
+    </td>
+    <td style="border:1px solid var(--adm-border);padding:4px 6px">
+      <input type="text" value="${data.trabajo||''}" class="trab-trabajo" placeholder="Descripción del trabajo" style="border:none;background:transparent;width:100%;color:var(--adm-text);font-size:13px">
+    </td>
+    <td style="border:1px solid var(--adm-border);padding:4px 6px">
+      <input type="number" value="${data.debe||''}" class="trab-debe" placeholder="0" step="0.01" style="border:none;background:transparent;width:80px;text-align:right;color:var(--adm-text);font-size:13px">
+    </td>
+    <td style="border:1px solid var(--adm-border);padding:4px 6px">
+      <input type="number" value="${data.haber||''}" class="trab-haber" placeholder="0" step="0.01" style="border:none;background:transparent;width:80px;text-align:right;color:var(--adm-text);font-size:13px">
+    </td>
+    <td style="border:1px solid var(--adm-border);padding:4px 6px">
+      <input type="number" value="${data.saldo||''}" class="trab-saldo" placeholder="0" step="0.01" style="border:none;background:transparent;width:80px;text-align:right;color:var(--adm-text);font-size:13px">
+    </td>
+    <td style="border:1px solid var(--adm-border);padding:4px 6px;text-align:center">
+      <button type="button" onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--adm-muted);cursor:pointer;font-size:14px;line-height:1" title="Eliminar fila">✕</button>
+    </td>
+  `;
+  tbody.appendChild(tr);
+}
+
+function getTrabajosData() {
+  const tbody = document.getElementById('trabajosBody');
+  if (!tbody) return [];
+  return Array.from(tbody.querySelectorAll('tr')).map(tr => ({
+    fecha:   tr.querySelector('.trab-fecha')?.value   || '',
+    trabajo: tr.querySelector('.trab-trabajo')?.value || '',
+    debe:    tr.querySelector('.trab-debe')?.value    || '',
+    haber:   tr.querySelector('.trab-haber')?.value   || '',
+    saldo:   tr.querySelector('.trab-saldo')?.value   || '',
+  }));
+}
+
+document.getElementById('agregarTrabajoBtn')?.addEventListener('click', () => {
+  const tbody = document.getElementById('trabajosBody');
+  if (tbody) addTrabajoRow(tbody, { fecha: '', trabajo: '', debe: '', haber: '', saldo: '' });
+});
