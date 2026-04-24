@@ -78,7 +78,7 @@ function writeDB(d) {
 
 // ── WhatsApp ───────────────────────────────────────
 // Número con código de país Argentina (54) + número sin el 0 inicial
-const WHATSAPP_NUMBER = '5493454404511';
+const WHATSAPP_NUMBER = '5493455287370';
 
 function generarLinkWhatsApp(turno) {
   const nombre       = turno.nombre   || '-';
