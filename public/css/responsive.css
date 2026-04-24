@@ -3,6 +3,23 @@
    1024px · 768px · 480px
 ═══════════════════════════════════════ */
 
+/* ── Landscape tablet 1024×768 ─────── */
+@media (max-width: 1024px) and (max-height: 768px) {
+  .hero {
+    min-height: 100svh;
+  }
+
+  .hero__content {
+    padding-top: 80px;
+  }
+
+  .hero__stats {
+    bottom: 16px;
+  }
+
+  .stat__num { font-size: 24px; }
+}
+
 /* ── Tablet (≤ 1024px) ─────────────── */
 @media (max-width: 1024px) {
 

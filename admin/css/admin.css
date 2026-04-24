@@ -472,7 +472,7 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
 .anam-input:focus{outline:none;border-color:var(--adm-gold)}
 
 /* ═══ NUEVO TURNO MODAL ═══ */
-.nt-modal-box{overflow:hidden}
+.nt-modal-box{overflow-y:auto}
 .nt-header{gap:0}
 .nt-header-inner{display:flex;align-items:center;gap:12px}
 .nt-header-icon{font-size:1.5rem;line-height:1}
@@ -504,6 +504,15 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
 @keyframes modalOut{to{opacity:0;transform:scale(.95) translateY(8px)}}
 
 /* ═══ SCROLLBAR ═══ */
+/* ── 1024×768 and similar tablet/low-height screens ── */
+@media(max-width:1100px){.kpi-grid{grid-template-columns:repeat(2,1fr)}}
+@media(max-height:800px){
+  .modal{padding:12px;align-items:flex-start;padding-top:56px}
+  .modal__box{max-height:calc(100vh - 68px)}
+  .nt-body{padding:14px 18px!important}
+  .nt-footer{padding:10px 18px!important}
+  .form-group-adm{margin-bottom:8px}
+}
 ::-webkit-scrollbar{width:5px;height:5px}
 ::-webkit-scrollbar-track{background:transparent}
 ::-webkit-scrollbar-thumb{background:var(--adm-border-2);border-radius:3px}
