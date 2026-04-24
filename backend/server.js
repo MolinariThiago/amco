@@ -178,8 +178,9 @@ app.post("/api/admin/turnos", auth, (req, res) => {
   const { nombre, email = "", telefono = "", fecha, hora, servicio = "", medico = "", estado = "pendiente", notas = "" } = req.body;
   if (!nombre || !fecha || !hora) return res.status(400).json({ error: "nombre, fecha y hora son obligatorios" });
   const db = readDB();
+  const nextTurnoId = db.turnos.length > 0 ? Math.max(...db.turnos.map(t => Number(t.id) || 0)) + 1 : 1;
   const turno = {
-    id: Date.now(),
+    id: nextTurnoId,
     nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim(),
     fecha, hora, servicio, medico, estado, notas: notas.trim(),
     createdAt: new Date().toISOString(), deletedAt: null
@@ -322,8 +323,9 @@ app.post('/api/pacientes', auth, adminOnly, (req, res) => {
   if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio' });
   const db = readDB();
   if (!db.pacientes) db.pacientes = [];
+  const nextPacienteId = db.pacientes.length > 0 ? Math.max(...db.pacientes.map(p => Number(p.id) || 0)) + 1 : 1;
   const paciente = {
-    id:              Date.now(),
+    id:              nextPacienteId,
     nombre:          nombre.trim(),
     email:           email.trim(),
     telefono:        telefono.trim(),
@@ -375,8 +377,9 @@ function autoRegistrarPaciente(turno) {
     (turno.email && p.email && p.email.toLowerCase() === turno.email.toLowerCase())
   );
   if (!existe) {
+    const nextAutoId = db.pacientes.length > 0 ? Math.max(...db.pacientes.map(p => Number(p.id) || 0)) + 1 : 1;
     db.pacientes.push({
-      id:               Date.now() + Math.floor(Math.random() * 1000),
+      id:               nextAutoId,
       nombre:           turno.nombre,
       email:            turno.email || '',
       telefono:         turno.telefono || '',
@@ -458,9 +461,10 @@ app.listen(PORT, () => {
   console.log(`\n🦷  AMCO → http://localhost:${PORT}`);
   console.log(`🔒  Admin → http://localhost:${PORT}/admin\n`);
   console.log('  admin / 1234  (administrador)');
-  console.log('  jperez / perez123  (Dr. Juan Pérez)');
-  console.log('  alopez / lopez123  (Dra. Ana López)');
-  console.log('  cdiaz / diaz123   (Dr. Carlos Díaz)\n');
+  console.log('  luisina / luisina32  (Luisina B. Baccon)');
+  console.log('  sole / sole 32    (Soledad Cappello)');
+  console.log('  francisco / francisco 32  (Francisco Molinari)');
+  console.log('  magdalena / magdalena32   (Trastdort Maria Magdalena)\n');
 });
 
 

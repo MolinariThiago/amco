@@ -280,7 +280,7 @@ function renderCalendar() {
 }
 
 function medicoShort(m) {
-  return { 'dr-perez':'Pérez', 'dra-lopez':'López', 'dr-diaz':'Díaz' }[m] || '';
+  return { 'dra-baccon':'Baccon', 'dra-cappello':'Cappello', 'dr-molinari':'Molinari', 'dra-magdalena':'Magdalena' }[m] || '';
 }
 
 window.calDayClick = function(dateStr) {
@@ -345,9 +345,10 @@ function renderTurnosTable(turnos) {
 
 function medicoLabel(m) {
   const map={
-    'dr-perez': '<span class="medico-tag medico-tag--perez">Dr. Pérez</span>',
-    'dra-lopez':'<span class="medico-tag medico-tag--lopez">Dra. López</span>',
-    'dr-diaz':  '<span class="medico-tag medico-tag--diaz">Dr. Díaz</span>',
+    'dra-baccon':    '<span class="medico-tag medico-tag--baccon">Luisina B. Baccon</span>',
+    'dra-cappello':  '<span class="medico-tag medico-tag--cappello">Soledad Cappello</span>',
+    'dr-molinari':   '<span class="medico-tag medico-tag--molinari">Francisco Molinari</span>',
+    'dra-magdalena': '<span class="medico-tag medico-tag--magdalena">M. Magdalena</span>',
   };
   return map[m]||'<span style="font-size:11px;color:var(--adm-muted)">—</span>';
 }
