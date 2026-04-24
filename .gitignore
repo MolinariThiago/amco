@@ -5,10 +5,11 @@ node_modules/
 backend/.env
 .env
 
-# Database (generated at runtime)
+# Database (generated at runtime — NO subir al repo, Railway lo mantiene en disco)
 backend/amco.db
 backend/amco.db-shm
 backend/amco.db-wal
+backend/db.json
 
 # Logs
 *.log

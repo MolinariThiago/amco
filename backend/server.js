@@ -158,15 +158,6 @@ app.post('/api/turnos', (req, res) => {
   if (!nombre || !fecha || !hora) return res.status(400).json({ error: 'nombre, fecha y hora son obligatorios' });
 
   // Solo registrar al paciente, sin guardar turno en el calendario
-  const datosContacto = {
-    nombre: nombre.trim(),
-    email:  email.trim(),
-    telefono: telefono.trim(),
-    // Guardamos la preferencia de fecha/hora/servicio en observaciones
-    observaciones: `Consulta solicitada: ${servicio || 'General'} — ${fecha} ${hora}hs`,
-  };
-  autoRegistrarPaciente(datosContacto);
-
   // Generar link de WhatsApp igual que antes
   const whatsappUrl = generarLinkWhatsApp({ nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim(), fecha, hora, servicio });
   res.status(201).json({ success: true, ok: true, message: 'Datos recibidos correctamente. Un profesional se contactará para confirmar tu turno.', whatsappUrl });
