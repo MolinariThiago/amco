@@ -7,16 +7,16 @@
 
 :root {
   /* ── Palette ── */
-  --color-cream:        #F7F3EE;
-  --color-cream-dark:   #EDE7DC;
-  --color-navy:         #1A2B3C;
-  --color-navy-light:   #2C4257;
-  --color-navy-muted:   rgba(26, 43, 60, 0.06);
-  --color-gold:         #C9A96E;
-  --color-gold-light:   #E8D5B0;
-  --color-gold-shadow:  rgba(201, 169, 110, 0.35);
+  --color-cream:        #EDF7F6;
+  --color-cream-dark:   #D0EEEB;
+  --color-navy:         #1B5E57;
+  --color-navy-light:   #2A7F78;
+  --color-navy-muted:   rgba(27, 94, 87, 0.06);
+  --color-gold:         #3BBFB3;
+  --color-gold-light:   #7DD9D3;
+  --color-gold-shadow:  rgba(59, 191, 179, 0.35);
   --color-white:        #FFFFFF;
-  --color-text:         #1A2B3C;
+  --color-text:         #1B5E57;
   --color-text-muted:   #6B7A8D;
   --color-success:      #2D6A2D;
   --color-success-bg:   #EEF6EE;

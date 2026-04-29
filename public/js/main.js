@@ -86,6 +86,22 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
   );
 
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
+
+  /* Slide-in from right for Magdalena card */
+  const slideObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          setTimeout(() => {
+            entry.target.classList.add('is-visible');
+          }, 300);
+          slideObserver.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.1, rootMargin: '0px 0px -30px 0px' }
+  );
+  document.querySelectorAll('.reveal-slide-right').forEach(el => slideObserver.observe(el));
 })();
 
 /* ══════════════════════════════════════
