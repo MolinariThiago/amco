@@ -42,11 +42,17 @@
   <!-- ── HEADER ─────────────────────────── -->
   <header id="mainHeader" class="header">
     <a href="/" class="logo" aria-label="AMCO Inicio">
-      <svg class="logo-svg" viewBox="0 0 220 90" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
-        <path d="M108 6 C88 6, 73 17, 73 31 C73 22, 88 14, 110 14 C132 14, 147 22, 147 31 C147 17, 132 6, 108 6Z" fill="#3BBFB3"/>
-        <path d="M73 31 C74 45, 89 54, 110 54 C91 48, 76 40, 76 33" fill="#2A9D8F" opacity="0.8"/>
-        <text x="110" y="74" text-anchor="middle" font-family="'DM Sans', system-ui, sans-serif" font-weight="700" font-size="26" letter-spacing="10" fill="currentColor">AMCO</text>
-        <text x="110" y="87" text-anchor="middle" font-family="'DM Sans', system-ui, sans-serif" font-weight="400" font-size="8" letter-spacing="3" fill="currentColor" opacity="0.8">odontología digital</text>
+      <svg class="logo-svg" viewBox="0 0 220 95" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Outer arc (lighter teal) -->
+        <path d="M75 38 C75 18, 91 6, 110 6 C129 6, 145 18, 145 38 C145 26, 130 16, 110 16 C90 16, 75 26, 75 38Z" fill="#4ECDC4"/>
+        <!-- Inner arc / smile (darker teal) -->
+        <path d="M82 38 C82 22, 94 13, 110 13 C126 13, 138 22, 138 38 C138 28, 127 20, 110 20 C93 20, 82 28, 82 38Z" fill="#2A9D8F"/>
+        <!-- AMCO text -->
+        <text x="110" y="68" text-anchor="middle" font-family="'DM Sans', Arial, sans-serif" font-weight="700" font-size="24" letter-spacing="12" fill="#1D6E6A">AMCO</text>
+        <!-- Divider line -->
+        <line x1="60" y1="73" x2="160" y2="73" stroke="#1D6E6A" stroke-width="0.8" opacity="0.4"/>
+        <!-- Subtitle -->
+        <text x="110" y="84" text-anchor="middle" font-family="'DM Sans', Arial, sans-serif" font-weight="400" font-size="8" letter-spacing="2.5" fill="#555">odontología digital</text>
       </svg>
     </a>
 
@@ -323,15 +329,9 @@
             <span class="doc-card__tag">Periodoncia · Cirugía</span>
           </div>
         </article>
-        <article class="doc-card doc-card--magdalena reveal-slide-right">
+        <article class="doc-card">
           <div class="doc-card__img-wrap">
-            <div class="doc-card__avatar-placeholder doc-card__avatar-placeholder--female" aria-hidden="true">
-              <svg viewBox="0 0 80 80" xmlns="http://www.w3.org/2000/svg">
-                <circle cx="40" cy="28" r="18" fill="var(--color-gold-light)" opacity="0.6"/>
-                <path d="M10 75 C10 55 25 45 40 45 C55 45 70 55 70 75Z" fill="var(--color-gold-light)" opacity="0.6"/>
-                <circle cx="40" cy="27" r="13" fill="var(--color-gold)" opacity="0.4"/>
-              </svg>
-            </div>
+            <img src="/magdalena.jpg" alt="Magdalena — Odontóloga" style="object-position: center top;">
             <div class="doc-card__overlay" aria-hidden="true"></div>
             <div class="doc-card__social" aria-label="Redes sociales">
               <a href="#" aria-label="LinkedIn Magdalena">
@@ -574,11 +574,12 @@
     <div class="footer__top">
       <div class="footer__brand">
         <span class="footer__logo" aria-label="AMCO">
-          <svg viewBox="0 0 220 90" xmlns="http://www.w3.org/2000/svg" style="height:44px;width:auto;display:block;" aria-hidden="true">
-            <path d="M108 6 C88 6, 73 17, 73 31 C73 22, 88 14, 110 14 C132 14, 147 22, 147 31 C147 17, 132 6, 108 6Z" fill="#3BBFB3"/>
-            <path d="M73 31 C74 45, 89 54, 110 54 C91 48, 76 40, 76 33" fill="#2A9D8F" opacity="0.8"/>
-            <text x="110" y="74" text-anchor="middle" font-family="'DM Sans', system-ui, sans-serif" font-weight="700" font-size="26" letter-spacing="10" fill="currentColor">AMCO</text>
-            <text x="110" y="87" text-anchor="middle" font-family="'DM Sans', system-ui, sans-serif" font-weight="400" font-size="8" letter-spacing="3" fill="currentColor" opacity="0.8">odontología digital</text>
+          <svg viewBox="0 0 220 95" xmlns="http://www.w3.org/2000/svg" style="height:44px;width:auto;display:block;" aria-hidden="true">
+            <path d="M75 38 C75 18, 91 6, 110 6 C129 6, 145 18, 145 38 C145 26, 130 16, 110 16 C90 16, 75 26, 75 38Z" fill="#4ECDC4"/>
+            <path d="M82 38 C82 22, 94 13, 110 13 C126 13, 138 22, 138 38 C138 28, 127 20, 110 20 C93 20, 82 28, 82 38Z" fill="#2A9D8F"/>
+            <text x="110" y="68" text-anchor="middle" font-family="'DM Sans', Arial, sans-serif" font-weight="700" font-size="24" letter-spacing="12" fill="currentColor">AMCO</text>
+            <line x1="60" y1="73" x2="160" y2="73" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+            <text x="110" y="84" text-anchor="middle" font-family="'DM Sans', Arial, sans-serif" font-weight="400" font-size="8" letter-spacing="2.5" fill="currentColor" opacity="0.8">odontología digital</text>
           </svg>
         </span>
         <p>Centro odontológico con más de 15 años comprometido con la salud bucal y la sonrisa de nuestros pacientes.</p>
