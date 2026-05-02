@@ -2,25 +2,24 @@
 
 const express    = require('express');
 const cors       = require('cors');
-const fs         = require('fs');
 const path       = require('path');
 const jwt        = require('jsonwebtoken');
 const crypto     = require('crypto');
+const { Pool }   = require('pg');
 
-const app    = express();
-const PORT   = process.env.PORT || 3001;
+const app  = express();
+const PORT = process.env.PORT || 3001;
 
-// JWT_SECRET DEBE ser seteado en variable de entorno en producción
+// ── JWT ───────────────────────────────────────────
 if (!process.env.JWT_SECRET) {
   console.warn('⚠️  ADVERTENCIA: JWT_SECRET no definido en .env. Usando valor por defecto — NO usar en producción.');
 }
 const SECRET = process.env.JWT_SECRET || crypto.randomBytes(32).toString('hex');
 
-// CORS — solo permite el origen configurado (o localhost en dev)
+// ── CORS ──────────────────────────────────────────
 const allowedOrigin = process.env.ALLOWED_ORIGIN || 'http://localhost:3001';
 app.use(cors({
   origin: (origin, cb) => {
-    // Permitir requests sin origin (ej: curl, Postman, apps móviles en dev)
     if (!origin || allowedOrigin === '*' || origin === allowedOrigin) return cb(null, true);
     cb(new Error('CORS: origen no permitido'));
   },
@@ -28,8 +27,7 @@ app.use(cors({
 }));
 app.use(express.json());
 
-// ── Hashing de contraseñas (SHA-256 + salt fijo + salt por contraseña) ──────
-// Nota: en producción se recomienda bcrypt. Esto requiere solo módulos nativos de Node.
+// ── Password hashing ──────────────────────────────
 const PASS_PEPPER = process.env.PASS_PEPPER || 'amco_pepper_changeme_2026';
 function hashPassword(plain) {
   const salt = 'amco_salt_v4_' + plain.length;
@@ -39,71 +37,115 @@ function verifyPassword(plain, hashed) {
   return hashPassword(plain) === hashed;
 }
 
+// ── Static files ──────────────────────────────────
 app.use(express.static(path.resolve(__dirname, '..')));
 app.use(express.static(path.resolve(__dirname, '../public')));
 app.use('/admin', express.static(path.resolve(__dirname, '../admin')));
 
-// ── DB ────────────────────────────────────────────
-const dbPath = path.join(__dirname, 'db.json');
+// ── PostgreSQL ────────────────────────────────────
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('railway')
+    ? { rejectUnauthorized: false }
+    : (process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false),
+});
 
-function readDB() {
-  if (!fs.existsSync(dbPath)) {
-    const init = {
-      turnos: [], analytics: [], pacientes: [],
-      users: [{ username: 'admin', password: hashPassword('1234'), hashed: true, role: 'admin', nombre: 'Administrador', medico: null }]
-    };
-    fs.writeFileSync(dbPath, JSON.stringify(init, null, 2));
-    return init;
-  }
+// ── DB init — crea tablas si no existen ───────────
+async function initDB() {
+  const client = await pool.connect();
   try {
-    const db = JSON.parse(fs.readFileSync(dbPath, 'utf8'));
-    db.users = (db.users || []).map(u => ({
-      username: u.username || u.user,
-      password: u.password || u.pass,
-      hashed:   u.hashed   || false,
-      role:     u.role     || 'admin',
-      nombre:   u.nombre   || u.username,
-      medico:   u.medico   || null
-    }));
-    if (!db.analytics) db.analytics = [];
-    if (!db.pacientes) db.pacientes = [];
-    return db;
-  } catch {
-    return { turnos: [], analytics: [], users: [] };
+    await client.query(`
+      CREATE TABLE IF NOT EXISTS users (
+        id          SERIAL PRIMARY KEY,
+        username    TEXT UNIQUE NOT NULL,
+        password    TEXT NOT NULL,
+        hashed      BOOLEAN DEFAULT TRUE,
+        role        TEXT DEFAULT 'admin',
+        nombre      TEXT,
+        medico      TEXT
+      );
+
+      CREATE TABLE IF NOT EXISTS turnos (
+        id          SERIAL PRIMARY KEY,
+        nombre      TEXT NOT NULL,
+        email       TEXT DEFAULT '',
+        telefono    TEXT DEFAULT '',
+        fecha       TEXT NOT NULL,
+        hora        TEXT NOT NULL,
+        servicio    TEXT DEFAULT '',
+        medico      TEXT DEFAULT '',
+        estado      TEXT DEFAULT 'pendiente',
+        notas       TEXT DEFAULT '',
+        created_at  TIMESTAMPTZ DEFAULT NOW(),
+        deleted_at  TIMESTAMPTZ
+      );
+
+      CREATE TABLE IF NOT EXISTS pacientes (
+        id                SERIAL PRIMARY KEY,
+        nombre            TEXT NOT NULL,
+        email             TEXT DEFAULT '',
+        telefono          TEXT DEFAULT '',
+        fecha_nacimiento  TEXT DEFAULT '',
+        dni               TEXT DEFAULT '',
+        observaciones     TEXT DEFAULT '',
+        historial_clinico TEXT DEFAULT '',
+        estado_civil      TEXT DEFAULT '',
+        profesion         TEXT DEFAULT '',
+        direccion         TEXT DEFAULT '',
+        obrasocial        TEXT DEFAULT '',
+        indicacion        TEXT DEFAULT '',
+        medicacion        TEXT DEFAULT '',
+        trat_inicio       TEXT DEFAULT '',
+        trat_termino      TEXT DEFAULT '',
+        anamnesis         JSONB DEFAULT '{}',
+        odontograma       JSONB DEFAULT '{}',
+        created_at        TIMESTAMPTZ DEFAULT NOW()
+      );
+
+      CREATE TABLE IF NOT EXISTS analytics (
+        id          SERIAL PRIMARY KEY,
+        event       TEXT DEFAULT 'pageview',
+        page        TEXT DEFAULT '',
+        session_id  TEXT DEFAULT '',
+        created_at  TIMESTAMPTZ DEFAULT NOW()
+      );
+    `);
+
+    // Insertar admin por defecto si no existe
+    const exists = await client.query(`SELECT id FROM users WHERE username = 'admin'`);
+    if (exists.rows.length === 0) {
+      await client.query(
+        `INSERT INTO users (username, password, hashed, role, nombre, medico)
+         VALUES ($1, $2, true, 'admin', 'Administrador', null)`,
+        ['admin', hashPassword('1234')]
+      );
+      console.log('✅ Usuario admin creado (admin / 1234)');
+    }
+  } finally {
+    client.release();
   }
 }
 
-function writeDB(d) {
-  fs.writeFileSync(dbPath, JSON.stringify(d, null, 2));
-}
-
-// ── WhatsApp ───────────────────────────────────────
-// Número con código de país Argentina (54) + número sin el 0 inicial
+// ── WhatsApp ──────────────────────────────────────
 const WHATSAPP_NUMBER = '5493455287370';
 
 function generarLinkWhatsApp(turno) {
   const nombre       = turno.nombre   || '-';
   const primerNombre = nombre.split(' ')[0];
   const servicio     = turno.servicio || 'Consulta general';
-
   let fechaStr = turno.fecha || '-';
   if (turno.fecha && turno.fecha.includes('-')) {
     const [y, m, d] = turno.fecha.split('-');
     fechaStr = `${d}/${m}/${y}`;
   }
-
   const mensaje =
-    `🪷 *AMCO · Centro Odontológico*\n\n` +
-    `Hola ${primerNombre}! Recibimos tu consulta 🙌\n\n` +
-    `🦷 *${servicio}*\n` +
-    `📅 ${fechaStr} · ${turno.hora || '-'} hs\n\n` +
+    `\uD83CUD33F *AMCO \u00B7 Centro Odontol\u00F3gico*\n\n` +
+    `Hola ${primerNombre}! Recibimos tu consulta \uD83D\uDE4C\n\n` +
+    `\uD83E\uDDB7 *${servicio}*\n` +
+    `\uD83D\uDCC5 ${fechaStr} \u00B7 ${turno.hora || '-'} hs\n\n` +
     `Te contactamos a la brevedad para confirmar el turno.\n` +
-    `_AMCO · Concordia, Entre Ríos_`;
-
+    `_AMCO \u00B7 Concordia, Entre R\u00EDos_`;
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(mensaje)}`;
-}
-function enviarMails(turno) {
-  generarLinkWhatsApp(turno);
 }
 
 // ── Auth ──────────────────────────────────────────
@@ -114,353 +156,448 @@ function auth(req, res, next) {
     req.user = jwt.verify(token, SECRET);
     next();
   } catch {
-    res.status(401).json({ error: 'Token inválido o expirado' });
+    res.status(401).json({ error: 'Token inv\u00E1lido o expirado' });
   }
 }
 
-// Solo admin puede acceder
 function adminOnly(req, res, next) {
   if (req.user.role !== 'admin') return res.status(403).json({ error: 'Acceso solo para administradores' });
   next();
 }
 
-// ══════════════════════════════════════════════════
-//  RUTAS PÚBLICAS
-// ══════════════════════════════════════════════════
-
-// LOGIN — devuelve role y medico para que el front sepa qué mostrar
-app.post('/api/admin/login', (req, res) => {
-  const { username, password } = req.body;
-  const db   = readDB();
-  const user = db.users.find(u => {
-    if (u.username !== username) return false;
-    // Soporte de contraseñas hasheadas y legacy (texto plano) durante migración
-    if (u.hashed) return verifyPassword(password, u.password);
-    // Contraseña legacy en texto plano → comparar y migrar al vuelo
-    if (u.password === password) {
-      u.password = hashPassword(password);
-      u.hashed   = true;
-      writeDB(db);
-      return true;
-    }
-    return false;
-  });
-  if (!user) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
-  const token = jwt.sign(
-    { username: user.username, role: user.role, medico: user.medico, nombre: user.nombre },
-    SECRET, { expiresIn: '8h' }
-  );
-  res.json({ success: true, token, username: user.username, role: user.role, medico: user.medico, nombre: user.nombre });
-});
-
-// REGISTRO DE PACIENTE desde formulario público (NO crea turno en calendario)
-app.post('/api/turnos', (req, res) => {
-  const { nombre, email = '', telefono = '', fecha, hora, servicio = '', medico = '' } = req.body;
-  if (!nombre || !fecha || !hora) return res.status(400).json({ error: 'nombre, fecha y hora son obligatorios' });
-
-  // Solo registrar al paciente, sin guardar turno en el calendario
-  // Generar link de WhatsApp igual que antes
-  const whatsappUrl = generarLinkWhatsApp({ nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim(), fecha, hora, servicio });
-  res.status(201).json({ success: true, ok: true, message: 'Datos recibidos correctamente. Un profesional se contactará para confirmar tu turno.', whatsappUrl });
-});
-
-
-// CREAR TURNO MANUAL desde el admin (requiere JWT)
-app.post("/api/admin/turnos", auth, (req, res) => {
-  const { nombre, email = "", telefono = "", fecha, hora, servicio = "", medico = "", estado = "pendiente", notas = "" } = req.body;
-  if (!nombre || !fecha || !hora) return res.status(400).json({ error: "nombre, fecha y hora son obligatorios" });
-  const db = readDB();
-  const nextTurnoId = db.turnos.length > 0 ? Math.max(...db.turnos.map(t => Number(t.id) || 0)) + 1 : 1;
-  const turno = {
-    id: nextTurnoId,
-    nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim(),
-    fecha, hora, servicio, medico, estado, notas: notas.trim(),
-    createdAt: new Date().toISOString(), deletedAt: null
+// Helper: mapear fila DB -> objeto turno (camelCase)
+function mapTurno(row) {
+  return {
+    id:        row.id,
+    nombre:    row.nombre,
+    email:     row.email,
+    telefono:  row.telefono,
+    fecha:     row.fecha,
+    hora:      row.hora,
+    servicio:  row.servicio,
+    medico:    row.medico,
+    estado:    row.estado,
+    notas:     row.notas,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at,
   };
-  db.turnos.push(turno);
-  writeDB(db);
-  autoRegistrarPaciente(turno);
-  res.status(201).json({ success: true, ok: true, id: turno.id });
-});
-// ANALYTICS TRACK (público)
-app.post('/api/analytics/track', (req, res) => {
-  const { event = 'pageview', page = '', session_id = '' } = req.body;
-  const db = readDB();
-  db.analytics.push({ event, page, session_id, createdAt: new Date().toISOString() });
-  writeDB(db);
-  res.json({ ok: true });
-});
+}
 
-// ══════════════════════════════════════════════════
-//  RUTAS ADMIN (requieren JWT)
-// ══════════════════════════════════════════════════
+function mapPaciente(row) {
+  return {
+    id:               row.id,
+    nombre:           row.nombre,
+    email:            row.email,
+    telefono:         row.telefono,
+    fechaNacimiento:  row.fecha_nacimiento,
+    dni:              row.dni,
+    observaciones:    row.observaciones,
+    historialClinico: row.historial_clinico,
+    estadoCivil:      row.estado_civil,
+    profesion:        row.profesion,
+    direccion:        row.direccion,
+    obrasocial:       row.obrasocial,
+    indicacion:       row.indicacion,
+    medicacion:       row.medicacion,
+    tratInicio:       row.trat_inicio,
+    tratTermino:      row.trat_termino,
+    anamnesis:        row.anamnesis,
+    odontograma:      row.odontograma,
+    createdAt:        row.created_at,
+  };
+}
 
-// GET TURNOS — admin ve todos, doctor solo los suyos
-app.get('/api/turnos', auth, (req, res) => {
-  const { vista = 'activos', search = '', from = '', to = '' } = req.query;
-  let lista = readDB().turnos || [];
+// ═════════════════════════════════════════════════
+//  RUTAS PUBLICAS
+// ═════════════════════════════════════════════════
 
-  // Filtrar por médico si es doctor
-  if (req.user.role === 'doctor' && req.user.medico) {
-    lista = lista.filter(t => t.medico === req.user.medico);
-  }
+// LOGIN
+app.post('/api/admin/login', async (req, res) => {
+  try {
+    const { username, password } = req.body;
+    const result = await pool.query(`SELECT * FROM users WHERE username = $1`, [username]);
+    if (result.rows.length === 0) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
 
-  if (vista === 'eliminados') lista = lista.filter(t => !!t.deletedAt);
-  else                        lista = lista.filter(t => !t.deletedAt);
+    const user = result.rows[0];
+    let valid = false;
 
-  if (search) {
-    const q = search.toLowerCase();
-    lista = lista.filter(t =>
-      (t.nombre   || '').toLowerCase().includes(q) ||
-      (t.servicio || '').toLowerCase().includes(q) ||
-      (t.email    || '').toLowerCase().includes(q)
+    if (user.hashed) {
+      valid = verifyPassword(password, user.password);
+    } else {
+      if (user.password === password) {
+        valid = true;
+        await pool.query(
+          `UPDATE users SET password = $1, hashed = true WHERE id = $2`,
+          [hashPassword(password), user.id]
+        );
+      }
+    }
+
+    if (!valid) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+
+    const token = jwt.sign(
+      { username: user.username, role: user.role, medico: user.medico, nombre: user.nombre },
+      SECRET, { expiresIn: '8h' }
     );
+    res.json({ success: true, token, username: user.username, role: user.role, medico: user.medico, nombre: user.nombre });
+  } catch (err) {
+    console.error('Login error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-  if (from) lista = lista.filter(t => (t.fecha || '') >= from);
-  if (to)   lista = lista.filter(t => (t.fecha || '') <= to);
+});
 
-  res.json({ ok: true, data: [...lista].reverse() });
+// REGISTRO desde formulario publico (no crea turno en calendario)
+app.post('/api/turnos', async (req, res) => {
+  try {
+    const { nombre, email = '', telefono = '', fecha, hora, servicio = '' } = req.body;
+    if (!nombre || !fecha || !hora) return res.status(400).json({ error: 'nombre, fecha y hora son obligatorios' });
+    const whatsappUrl = generarLinkWhatsApp({ nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim(), fecha, hora, servicio });
+    res.status(201).json({ success: true, ok: true, message: 'Datos recibidos correctamente. Un profesional se contactará para confirmar tu turno.', whatsappUrl });
+  } catch (err) {
+    console.error('POST /api/turnos error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ANALYTICS TRACK (publico)
+app.post('/api/analytics/track', async (req, res) => {
+  try {
+    const { event = 'pageview', page = '', session_id = '' } = req.body;
+    await pool.query(
+      `INSERT INTO analytics (event, page, session_id) VALUES ($1, $2, $3)`,
+      [event, page, session_id]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('Analytics track error:', err);
+    res.json({ ok: true });
+  }
+});
+
+// ═════════════════════════════════════════════════
+//  RUTAS ADMIN (requieren JWT)
+// ═════════════════════════════════════════════════
+
+// CREAR TURNO MANUAL desde el admin
+app.post('/api/admin/turnos', auth, async (req, res) => {
+  try {
+    const { nombre, email = '', telefono = '', fecha, hora, servicio = '', medico = '', estado = 'pendiente', notas = '' } = req.body;
+    if (!nombre || !fecha || !hora) return res.status(400).json({ error: 'nombre, fecha y hora son obligatorios' });
+    const result = await pool.query(
+      `INSERT INTO turnos (nombre, email, telefono, fecha, hora, servicio, medico, estado, notas)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9)
+       RETURNING id`,
+      [nombre.trim(), email.trim(), telefono.trim(), fecha, hora, servicio, medico, estado, notas.trim()]
+    );
+    const turnoId = result.rows[0].id;
+    await autoRegistrarPaciente({ nombre: nombre.trim(), email: email.trim(), telefono: telefono.trim() });
+    res.status(201).json({ success: true, ok: true, id: turnoId });
+  } catch (err) {
+    console.error('POST /api/admin/turnos error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// GET TURNOS
+app.get('/api/turnos', auth, async (req, res) => {
+  try {
+    const { vista = 'activos', search = '', from = '', to = '' } = req.query;
+    let query = `SELECT * FROM turnos WHERE 1=1`;
+    const params = [];
+    let idx = 1;
+
+    if (req.user.role === 'doctor' && req.user.medico) {
+      query += ` AND medico = $${idx++}`;
+      params.push(req.user.medico);
+    }
+    if (vista === 'eliminados') {
+      query += ` AND deleted_at IS NOT NULL`;
+    } else {
+      query += ` AND deleted_at IS NULL`;
+    }
+    if (search) {
+      query += ` AND (LOWER(nombre) LIKE $${idx} OR LOWER(servicio) LIKE $${idx} OR LOWER(email) LIKE $${idx})`;
+      params.push(`%${search.toLowerCase()}%`);
+      idx++;
+    }
+    if (from) { query += ` AND fecha >= $${idx++}`; params.push(from); }
+    if (to)   { query += ` AND fecha <= $${idx++}`; params.push(to); }
+    query += ` ORDER BY id DESC`;
+
+    const result = await pool.query(query, params);
+    res.json({ ok: true, data: result.rows.map(mapTurno) });
+  } catch (err) {
+    console.error('GET /api/turnos error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
 // PATCH turno
-app.patch('/api/turnos/:id', auth, (req, res) => {
-  const db  = readDB();
-  const id  = Number(req.params.id);
-  const idx = db.turnos.findIndex(t => t.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Turno no encontrado' });
-  // Doctor solo puede editar sus propios turnos
-  if (req.user.role === 'doctor' && db.turnos[idx].medico !== req.user.medico) {
-    return res.status(403).json({ error: 'Sin permiso para editar este turno' });
+app.patch('/api/turnos/:id', auth, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const turnoResult = await pool.query(`SELECT * FROM turnos WHERE id = $1`, [id]);
+    if (turnoResult.rows.length === 0) return res.status(404).json({ error: 'Turno no encontrado' });
+    const turno = turnoResult.rows[0];
+    if (req.user.role === 'doctor' && turno.medico !== req.user.medico) {
+      return res.status(403).json({ error: 'Sin permiso para editar este turno' });
+    }
+    const { estado, notas } = req.body;
+    const updates = []; const params = []; let idx = 1;
+    if (estado !== undefined) { updates.push(`estado = $${idx++}`); params.push(estado); }
+    if (notas  !== undefined) { updates.push(`notas  = $${idx++}`); params.push(notas); }
+    if (updates.length === 0) return res.json({ success: true, ok: true });
+    params.push(id);
+    await pool.query(`UPDATE turnos SET ${updates.join(', ')} WHERE id = $${idx}`, params);
+    res.json({ success: true, ok: true });
+  } catch (err) {
+    console.error('PATCH /api/turnos error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-  const { estado, notas } = req.body;
-  if (estado !== undefined) db.turnos[idx].estado = estado;
-  if (notas  !== undefined) db.turnos[idx].notas  = notas;
-  writeDB(db);
-  res.json({ success: true, ok: true });
 });
 
 // DELETE turno (soft)
-app.delete('/api/turnos/:id', auth, (req, res) => {
-  const db  = readDB();
-  const id  = Number(req.params.id);
-  const idx = db.turnos.findIndex(t => t.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Turno no encontrado' });
-  if (req.user.role === 'doctor' && db.turnos[idx].medico !== req.user.medico) {
-    return res.status(403).json({ error: 'Sin permiso' });
+app.delete('/api/turnos/:id', auth, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const turnoResult = await pool.query(`SELECT * FROM turnos WHERE id = $1`, [id]);
+    if (turnoResult.rows.length === 0) return res.status(404).json({ error: 'Turno no encontrado' });
+    const turno = turnoResult.rows[0];
+    if (req.user.role === 'doctor' && turno.medico !== req.user.medico) {
+      return res.status(403).json({ error: 'Sin permiso' });
+    }
+    await pool.query(`UPDATE turnos SET deleted_at = NOW() WHERE id = $1`, [id]);
+    res.json({ success: true, ok: true });
+  } catch (err) {
+    console.error('DELETE /api/turnos error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
-  db.turnos[idx].deletedAt = new Date().toISOString();
-  writeDB(db);
-  res.json({ success: true, ok: true });
 });
 
-// ══════════════════════════════════════════════════
+// ═════════════════════════════════════════════════
 //  PACIENTES
-// ══════════════════════════════════════════════════
+// ═════════════════════════════════════════════════
 
-// GET pacientes con turno HOY — accesible para doctores y admins
-app.get('/api/pacientes/hoy', auth, (req, res) => {
-  const db = readDB();
-  const hoy = new Date().toISOString().slice(0, 10);
-  let turnos = (db.turnos || []).filter(t => !t.deletedAt && t.fecha === hoy);
-
-  // Doctor solo ve sus propios turnos
-  if (req.user.role === 'doctor' && req.user.medico) {
-    turnos = turnos.filter(t => t.medico === req.user.medico);
+app.get('/api/pacientes/hoy', auth, async (req, res) => {
+  try {
+    const hoy = new Date().toISOString().slice(0, 10);
+    let turnosQuery = `SELECT * FROM turnos WHERE deleted_at IS NULL AND fecha = $1`;
+    const params = [hoy];
+    if (req.user.role === 'doctor' && req.user.medico) {
+      turnosQuery += ` AND medico = $2`;
+      params.push(req.user.medico);
+    }
+    turnosQuery += ` ORDER BY hora ASC`;
+    const turnosResult = await pool.query(turnosQuery, params);
+    const resultado = await Promise.all(turnosResult.rows.map(async (t) => {
+      const pacResult = await pool.query(
+        `SELECT * FROM pacientes WHERE LOWER(nombre) = LOWER($1) OR (email != '' AND LOWER(email) = LOWER($2)) LIMIT 1`,
+        [t.nombre, t.email || '']
+      );
+      const p = pacResult.rows[0];
+      return {
+        turno: { id: t.id, hora: t.hora, servicio: t.servicio, estado: t.estado, notas: t.notas },
+        paciente: p ? mapPaciente(p) : { nombre: t.nombre, email: t.email || '', telefono: t.telefono || '', historialClinico: '', observaciones: '' }
+      };
+    }));
+    res.json({ ok: true, data: resultado, fecha: hoy });
+  } catch (err) {
+    console.error('GET /api/pacientes/hoy error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
   }
+});
 
-  const pacientes = db.pacientes || [];
-  // Para cada turno, buscar el paciente correspondiente
-  const resultado = turnos.map(t => {
-    const paciente = pacientes.find(p =>
-      p.nombre.toLowerCase() === t.nombre.toLowerCase() ||
-      (t.email && p.email && p.email.toLowerCase() === t.email.toLowerCase())
+app.get('/api/pacientes', auth, adminOnly, async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT * FROM pacientes ORDER BY id DESC`);
+    res.json({ ok: true, data: result.rows.map(mapPaciente) });
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.post('/api/pacientes', auth, adminOnly, async (req, res) => {
+  try {
+    const { nombre, email = '', telefono = '', fechaNacimiento = '', dni = '', observaciones = '',
+            estadoCivil = '', profesion = '', direccion = '', obrasocial = '', indicacion = '',
+            medicacion = '', tratInicio = '', tratTermino = '', anamnesis = {}, odontograma = {} } = req.body;
+    if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio' });
+    const result = await pool.query(
+      `INSERT INTO pacientes (nombre, email, telefono, fecha_nacimiento, dni, observaciones,
+         estado_civil, profesion, direccion, obrasocial, indicacion,
+         medicacion, trat_inicio, trat_termino, anamnesis, odontograma)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
+      [nombre.trim(), email.trim(), telefono.trim(), fechaNacimiento.trim(), dni.trim(),
+       observaciones.trim(), estadoCivil, profesion, direccion, obrasocial, indicacion,
+       medicacion, tratInicio, tratTermino, JSON.stringify(anamnesis), JSON.stringify(odontograma)]
     );
-    return {
-      turno: { id: t.id, hora: t.hora, servicio: t.servicio, estado: t.estado, notas: t.notas },
-      paciente: paciente ? {
-        id: paciente.id,
-        nombre: paciente.nombre,
-        email: paciente.email || '',
-        telefono: paciente.telefono || '',
-        fechaNacimiento: paciente.fechaNacimiento || '',
-        dni: paciente.dni || '',
-        obrasocial: paciente.obrasocial || '',
-        historialClinico: paciente.historialClinico || '',
-        observaciones: paciente.observaciones || '',
-        medicacion: paciente.medicacion || '',
-      } : {
-        nombre: t.nombre,
-        email: t.email || '',
-        telefono: t.telefono || '',
-        historialClinico: '',
-        observaciones: '',
-      }
+    res.status(201).json({ ok: true, id: result.rows[0].id });
+  } catch (err) {
+    console.error('POST /api/pacientes error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+app.patch('/api/pacientes/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const check = await pool.query(`SELECT id FROM pacientes WHERE id = $1`, [id]);
+    if (check.rows.length === 0) return res.status(404).json({ error: 'Paciente no encontrado' });
+    const fieldMap = {
+      nombre: 'nombre', email: 'email', telefono: 'telefono',
+      fechaNacimiento: 'fecha_nacimiento', dni: 'dni',
+      observaciones: 'observaciones', historialClinico: 'historial_clinico',
+      estadoCivil: 'estado_civil', profesion: 'profesion', direccion: 'direccion',
+      obrasocial: 'obrasocial', indicacion: 'indicacion', medicacion: 'medicacion',
+      tratInicio: 'trat_inicio', tratTermino: 'trat_termino',
+      anamnesis: 'anamnesis', odontograma: 'odontograma',
     };
-  }).sort((a, b) => (a.turno.hora || '').localeCompare(b.turno.hora || ''));
-
-  res.json({ ok: true, data: resultado, fecha: hoy });
+    const updates = []; const params = []; let idx = 1;
+    for (const [jsKey, dbCol] of Object.entries(fieldMap)) {
+      if (req.body[jsKey] !== undefined) {
+        updates.push(`${dbCol} = $${idx++}`);
+        const val = req.body[jsKey];
+        params.push(typeof val === 'object' ? JSON.stringify(val) : val);
+      }
+    }
+    if (updates.length === 0) return res.json({ ok: true });
+    params.push(id);
+    await pool.query(`UPDATE pacientes SET ${updates.join(', ')} WHERE id = $${idx}`, params);
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('PATCH /api/pacientes error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
-// GET todos los pacientes
-app.get('/api/pacientes', auth, adminOnly, (req, res) => {
-  const db = readDB();
-  res.json({ ok: true, data: db.pacientes || [] });
+app.delete('/api/pacientes/:id', auth, adminOnly, async (req, res) => {
+  try {
+    await pool.query(`DELETE FROM pacientes WHERE id = $1`, [Number(req.params.id)]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
-// POST crear paciente manualmente
-app.post('/api/pacientes', auth, adminOnly, (req, res) => {
-  const { nombre, email = '', telefono = '', fechaNacimiento = '', dni = '', observaciones = '',
-          estadoCivil = '', profesion = '', direccion = '', obrasocial = '', indicacion = '',
-          medicacion = '', tratInicio = '', tratTermino = '', anamnesis = {}, odontograma = {} } = req.body;
-  if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio' });
-  const db = readDB();
-  if (!db.pacientes) db.pacientes = [];
-  const nextPacienteId = db.pacientes.length > 0 ? Math.max(...db.pacientes.map(p => Number(p.id) || 0)) + 1 : 1;
-  const paciente = {
-    id:              nextPacienteId,
-    nombre:          nombre.trim(),
-    email:           email.trim(),
-    telefono:        telefono.trim(),
-    fechaNacimiento: fechaNacimiento.trim(),
-    dni:             dni.trim(),
-    observaciones:   observaciones.trim(),
-    historialClinico: '',
-    estadoCivil, profesion, direccion, obrasocial, indicacion,
-    medicacion, tratInicio, tratTermino, anamnesis, odontograma,
-    createdAt:       new Date().toISOString(),
-  };
-  db.pacientes.push(paciente);
-  writeDB(db);
-  res.status(201).json({ ok: true, id: paciente.id });
-});
-
-// PATCH editar paciente (datos + historial clínico)
-app.patch('/api/pacientes/:id', auth, adminOnly, (req, res) => {
-  const db  = readDB();
-  if (!db.pacientes) db.pacientes = [];
-  const id  = Number(req.params.id);
-  const idx = db.pacientes.findIndex(p => p.id === id);
-  if (idx === -1) return res.status(404).json({ error: 'Paciente no encontrado' });
-  const allowed = ['nombre','email','telefono','fechaNacimiento','dni','observaciones','historialClinico',
-                   'estadoCivil','profesion','direccion','obrasocial','indicacion','medicacion',
-                   'tratInicio','tratTermino','anamnesis','odontograma'];
-  allowed.forEach(k => { if (req.body[k] !== undefined) db.pacientes[idx][k] = req.body[k]; });
-  writeDB(db);
-  res.json({ ok: true });
-});
-
-// DELETE paciente
-app.delete('/api/pacientes/:id', auth, adminOnly, (req, res) => {
-  const db  = readDB();
-  if (!db.pacientes) db.pacientes = [];
-  const id  = Number(req.params.id);
-  db.pacientes = db.pacientes.filter(p => p.id !== id);
-  writeDB(db);
-  res.json({ ok: true });
-});
-
-// ── Al crear un turno, auto-registrar paciente si no existe ──
-// (esto se llama dentro del POST /api/turnos ya existente)
-function autoRegistrarPaciente(turno) {
-  const db = readDB();
-  if (!db.pacientes) db.pacientes = [];
-  const existe = db.pacientes.find(p =>
-    p.nombre.toLowerCase() === turno.nombre.toLowerCase() ||
-    (turno.email && p.email && p.email.toLowerCase() === turno.email.toLowerCase())
-  );
-  if (!existe) {
-    const nextAutoId = db.pacientes.length > 0 ? Math.max(...db.pacientes.map(p => Number(p.id) || 0)) + 1 : 1;
-    db.pacientes.push({
-      id:               nextAutoId,
-      nombre:           turno.nombre,
-      email:            turno.email || '',
-      telefono:         turno.telefono || '',
-      fechaNacimiento:  '',
-      dni:              '',
-      observaciones:    '',
-      historialClinico: '',
-      createdAt:        new Date().toISOString(),
-    });
-    writeDB(db);
+async function autoRegistrarPaciente(turno) {
+  try {
+    const exists = await pool.query(
+      `SELECT id FROM pacientes WHERE LOWER(nombre) = LOWER($1) OR (email != '' AND LOWER(email) = LOWER($2)) LIMIT 1`,
+      [turno.nombre, turno.email || '']
+    );
+    if (exists.rows.length === 0) {
+      await pool.query(
+        `INSERT INTO pacientes (nombre, email, telefono) VALUES ($1, $2, $3)`,
+        [turno.nombre, turno.email || '', turno.telefono || '']
+      );
+    }
+  } catch (err) {
+    console.error('autoRegistrarPaciente error:', err);
   }
 }
 
-// ANALYTICS — solo admin
-app.get('/api/analytics', auth, adminOnly, (req, res) => {
-  const db = readDB();
-  const tr = db.turnos    || [];
-  const ev = db.analytics || [];
-  const hoy   = new Date().toISOString().slice(0, 10);
-  const hace7 = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
-  const activos = tr.filter(t => !t.deletedAt);
-  const pageviews    = ev.filter(e => e.event === 'pageview').length;
-  const sessions     = new Set(ev.filter(e => e.session_id).map(e => e.session_id)).size;
-  const turnosSemana = activos.filter(t => (t.createdAt || '').slice(0, 10) >= hace7).length;
-  const svcMap = {};
-  activos.forEach(t => { const s = t.servicio || 'General'; svcMap[s] = (svcMap[s] || 0) + 1; });
-  const servicios = Object.entries(svcMap).map(([servicio, total]) => ({ servicio, total })).sort((a, b) => b.total - a.total);
-  const vDia = {};
-  ev.filter(e => e.event === 'pageview').forEach(e => { const d = (e.createdAt||'').slice(0,10); if(d) vDia[d]=(vDia[d]||0)+1; });
-  const visitasPorDia = Object.entries(vDia).map(([dia,c])=>({dia,c})).sort((a,b)=>a.dia.localeCompare(b.dia)).slice(-30);
-  const tDia = {};
-  activos.forEach(t => { const d = (t.createdAt||'').slice(0,10); if(d) tDia[d]=(tDia[d]||0)+1; });
-  const turnosPorDia = Object.entries(tDia).map(([dia,c])=>({dia,c})).sort((a,b)=>a.dia.localeCompare(b.dia)).slice(-30);
-  const evMap = {};
-  ev.forEach(e => { evMap[e.event]=(evMap[e.event]||0)+1; });
-  const eventosPop = Object.entries(evMap).map(([event,c])=>({event,c})).sort((a,b)=>b.c-a.c).slice(0,8);
-  res.json({
-    ok: true,
-    data: {
-      turnosTotal: activos.length,
-      turnosPend:  activos.filter(t=>t.estado==='pendiente').length,
-      turnosHoy:   activos.filter(t=>(t.fecha||'')===hoy).length,
-      turnosSemana, eliminados: tr.filter(t=>!!t.deletedAt).length,
-      pageviews, sessions,
-      ultimosTurnos: [...tr].reverse().slice(0,5),
-      servicios, visitasPorDia, turnosPorDia, eventosPop
-    }
-  });
+// ANALYTICS
+app.get('/api/analytics', auth, adminOnly, async (req, res) => {
+  try {
+    const hoy   = new Date().toISOString().slice(0, 10);
+    const hace7 = new Date(Date.now() - 7 * 86400000).toISOString().slice(0, 10);
+    const [
+      turnosTotal, turnosPend, turnosHoy, turnosSemana, eliminados,
+      pageviewsRes, sessionsRes, ultimosTurnos,
+      serviciosRes, visitasPorDia, turnosPorDia, eventosPop
+    ] = await Promise.all([
+      pool.query(`SELECT COUNT(*) FROM turnos WHERE deleted_at IS NULL`),
+      pool.query(`SELECT COUNT(*) FROM turnos WHERE deleted_at IS NULL AND estado = 'pendiente'`),
+      pool.query(`SELECT COUNT(*) FROM turnos WHERE deleted_at IS NULL AND fecha = $1`, [hoy]),
+      pool.query(`SELECT COUNT(*) FROM turnos WHERE deleted_at IS NULL AND created_at::date >= $1`, [hace7]),
+      pool.query(`SELECT COUNT(*) FROM turnos WHERE deleted_at IS NOT NULL`),
+      pool.query(`SELECT COUNT(*) FROM analytics WHERE event = 'pageview'`),
+      pool.query(`SELECT COUNT(DISTINCT session_id) FROM analytics WHERE session_id != ''`),
+      pool.query(`SELECT * FROM turnos ORDER BY id DESC LIMIT 5`),
+      pool.query(`SELECT servicio, COUNT(*) as total FROM turnos WHERE deleted_at IS NULL GROUP BY servicio ORDER BY total DESC`),
+      pool.query(`SELECT created_at::date as dia, COUNT(*) as c FROM analytics WHERE event = 'pageview' AND created_at >= NOW() - INTERVAL '30 days' GROUP BY dia ORDER BY dia`),
+      pool.query(`SELECT created_at::date as dia, COUNT(*) as c FROM turnos WHERE deleted_at IS NULL AND created_at >= NOW() - INTERVAL '30 days' GROUP BY dia ORDER BY dia`),
+      pool.query(`SELECT event, COUNT(*) as c FROM analytics GROUP BY event ORDER BY c DESC LIMIT 8`),
+    ]);
+    res.json({
+      ok: true,
+      data: {
+        turnosTotal:   Number(turnosTotal.rows[0].count),
+        turnosPend:    Number(turnosPend.rows[0].count),
+        turnosHoy:     Number(turnosHoy.rows[0].count),
+        turnosSemana:  Number(turnosSemana.rows[0].count),
+        eliminados:    Number(eliminados.rows[0].count),
+        pageviews:     Number(pageviewsRes.rows[0].count),
+        sessions:      Number(sessionsRes.rows[0].count),
+        ultimosTurnos: ultimosTurnos.rows.map(mapTurno),
+        servicios:     serviciosRes.rows.map(r => ({ servicio: r.servicio || 'General', total: Number(r.total) })),
+        visitasPorDia: visitasPorDia.rows.map(r => ({ dia: r.dia, c: Number(r.c) })),
+        turnosPorDia:  turnosPorDia.rows.map(r => ({ dia: r.dia, c: Number(r.c) })),
+        eventosPop:    eventosPop.rows.map(r => ({ event: r.event, c: Number(r.c) })),
+      }
+    });
+  } catch (err) {
+    console.error('GET /api/analytics error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
-// USUARIOS — solo admin
-app.get('/api/users', auth, adminOnly, (req, res) => {
-  const users = readDB().users.map(({ password, ...u }) => u);
-  res.json({ ok: true, data: users });
+// USUARIOS
+app.get('/api/users', auth, adminOnly, async (req, res) => {
+  try {
+    const result = await pool.query(`SELECT id, username, hashed, role, nombre, medico FROM users ORDER BY id`);
+    res.json({ ok: true, data: result.rows });
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
-app.post('/api/users', auth, adminOnly, (req, res) => {
-  const { username, password, role = 'doctor', nombre, medico } = req.body;
-  if (!username || !password) return res.status(400).json({ error: 'username y password requeridos' });
-  const db = readDB();
-  if (db.users.find(u => u.username === username)) return res.status(400).json({ error: 'Usuario ya existe' });
-  db.users.push({ username, password: hashPassword(password), hashed: true, role, nombre: nombre || username, medico: medico || null });
-  writeDB(db);
-  res.json({ ok: true });
+app.post('/api/users', auth, adminOnly, async (req, res) => {
+  try {
+    const { username, password, role = 'doctor', nombre, medico } = req.body;
+    if (!username || !password) return res.status(400).json({ error: 'username y password requeridos' });
+    await pool.query(
+      `INSERT INTO users (username, password, hashed, role, nombre, medico) VALUES ($1, $2, true, $3, $4, $5)`,
+      [username, hashPassword(password), role, nombre || username, medico || null]
+    );
+    res.json({ ok: true });
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ error: 'Usuario ya existe' });
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
-app.delete('/api/users/:username', auth, adminOnly, (req, res) => {
-  if (req.params.username === 'admin') return res.status(400).json({ error: 'No se puede eliminar al admin' });
-  const db = readDB();
-  db.users = db.users.filter(u => u.username !== req.params.username);
-  writeDB(db);
-  res.json({ ok: true });
+app.delete('/api/users/:username', auth, adminOnly, async (req, res) => {
+  try {
+    if (req.params.username === 'admin') return res.status(400).json({ error: 'No se puede eliminar al admin' });
+    await pool.query(`DELETE FROM users WHERE username = $1`, [req.params.username]);
+    res.json({ ok: true });
+  } catch (err) {
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
 });
 
+// ── Rutas HTML ────────────────────────────────────
 app.get('/admin*', (req, res) => res.sendFile(path.resolve(__dirname, '../admin/index.html')));
 app.get('/', (req, res) => res.sendFile(path.resolve(__dirname, '../index.html')));
-
-app.listen(PORT, () => {
-  console.log(`\n🦷  AMCO → http://localhost:${PORT}`);
-  console.log(`🔒  Admin → http://localhost:${PORT}/admin\n`);
-  console.log('  admin / 1234  (administrador)');
-  console.log('  luisina / luisina32  (Luisina B. Baccon)');
-  console.log('  sole / sole 32    (Soledad Cappello)');
-  console.log('  francisco / francisco 32  (Francisco Molinari)');
-  console.log('  magdalena / magdalena32   (Trastdort Maria Magdalena)\n');
+app.get('*', (req, res, next) => {
+  if (req.path.startsWith('/api')) return next();
+  res.send('AMCO running');
 });
 
+// ── Arranque ──────────────────────────────────────
+async function start() {
+  try {
+    await initDB();
+    app.listen(PORT, () => {
+      console.log(`\n🦷  AMCO -> http://localhost:${PORT}`);
+      console.log(`🔒  Admin -> http://localhost:${PORT}/admin\n`);
+      console.log('  admin / 1234  (administrador)');
+    });
+  } catch (err) {
+    console.error('❌ Error al iniciar el servidor:', err);
+    process.exit(1);
+  }
+}
 
-app.get("*", (req, res, next) => {
-  if (req.path.startsWith("/api")) return next();
-  res.send("AMCO running");
-});
+start();
