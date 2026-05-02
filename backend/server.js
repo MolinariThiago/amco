@@ -39,6 +39,7 @@ function verifyPassword(plain, hashed) {
   return hashPassword(plain) === hashed;
 }
 
+app.use(express.static(path.resolve(__dirname, '..')));
 app.use(express.static(path.resolve(__dirname, '../public')));
 app.use('/admin', express.static(path.resolve(__dirname, '../admin')));
 
@@ -446,7 +447,7 @@ app.delete('/api/users/:username', auth, adminOnly, (req, res) => {
 });
 
 app.get('/admin*', (req, res) => res.sendFile(path.resolve(__dirname, '../admin/index.html')));
-app.get('/', (req, res) => res.sendFile(path.resolve(__dirname, '../public/index.html')));
+app.get('/', (req, res) => res.sendFile(path.resolve(__dirname, '../index.html')));
 
 app.listen(PORT, () => {
   console.log(`\n🦷  AMCO → http://localhost:${PORT}`);

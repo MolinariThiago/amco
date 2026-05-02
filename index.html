@@ -41,7 +41,20 @@
 
   <!-- ── HEADER ─────────────────────────── -->
   <header id="mainHeader" class="header">
-    <a href="/" class="logo" aria-label="AMCO Inicio">AMCO</a>
+    <a href="/" class="logo" aria-label="AMCO Inicio">
+      <svg class="logo-svg" viewBox="0 0 220 95" xmlns="http://www.w3.org/2000/svg" aria-hidden="true">
+        <!-- Outer arc (lighter teal) -->
+        <path d="M75 38 C75 18, 91 6, 110 6 C129 6, 145 18, 145 38 C145 26, 130 16, 110 16 C90 16, 75 26, 75 38Z" fill="#4ECDC4"/>
+        <!-- Inner arc / smile (darker teal) -->
+        <path d="M82 38 C82 22, 94 13, 110 13 C126 13, 138 22, 138 38 C138 28, 127 20, 110 20 C93 20, 82 28, 82 38Z" fill="#2A9D8F"/>
+        <!-- AMCO text -->
+        <text x="110" y="68" text-anchor="middle" font-family="'DM Sans', Arial, sans-serif" font-weight="700" font-size="24" letter-spacing="12" fill="#1D6E6A">AMCO</text>
+        <!-- Divider line -->
+        <line x1="60" y1="73" x2="160" y2="73" stroke="#1D6E6A" stroke-width="0.8" opacity="0.4"/>
+        <!-- Subtitle -->
+        <text x="110" y="84" text-anchor="middle" font-family="'DM Sans', Arial, sans-serif" font-weight="400" font-size="8" letter-spacing="2.5" fill="#555">odontología digital</text>
+      </svg>
+    </a>
 
     <nav class="nav" role="navigation" aria-label="Navegación principal">
       <a href="#servicios" class="nav__link">Servicios</a>
@@ -267,10 +280,10 @@
       <div class="doctors reveal reveal--delay">
         <article class="doc-card">
           <div class="doc-card__img-wrap">
-            <img src="https://images.unsplash.com/photo-1622253692010-333f2da6031d?w=600&q=80" alt="Luisina B. Baccon — Odontóloga">
+            <img src="public/magdalena.jpg" alt="Magdalena — Odontóloga" style="object-position: center top;">
             <div class="doc-card__overlay" aria-hidden="true"></div>
             <div class="doc-card__social" aria-label="Redes sociales">
-              <a href="#" aria-label="LinkedIn Luisina B. Baccon">
+              <a href="#" aria-label="LinkedIn Magdalena">
                 <svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
               </a>
             </div>
@@ -284,7 +297,7 @@
         </article>
         <article class="doc-card">
           <div class="doc-card__img-wrap">
-            <img src="https://images.unsplash.com/photo-1594824476967-48c8b964273f?w=600&q=80" alt="Soledad Cappello — Odontóloga">
+            <img src="public/soledad.jpg" alt="Soledad Cappello — Odontóloga" style="object-position: center top;">
             <div class="doc-card__overlay" aria-hidden="true"></div>
             <div class="doc-card__social" aria-label="Redes sociales">
               <a href="#" aria-label="LinkedIn Soledad Cappello">
@@ -314,6 +327,23 @@
             <span class="doc-card__spec">Periodoncista · Cirujano</span>
             <p>Experto en periodoncia y cirugía oral con enfoque en tratamientos mínimamente invasivos.</p>
             <span class="doc-card__tag">Periodoncia · Cirugía</span>
+          </div>
+        </article>
+        <article class="doc-card">
+          <div class="doc-card__img-wrap">
+            <img src="public/magdalena.jpg" alt="Magdalena — Odontóloga" style="object-position: center top;">
+            <div class="doc-card__overlay" aria-hidden="true"></div>
+            <div class="doc-card__social" aria-label="Redes sociales">
+              <a href="#" aria-label="LinkedIn Magdalena">
+                <svg viewBox="0 0 24 24"><path d="M16 8a6 6 0 016 6v7h-4v-7a2 2 0 00-2-2 2 2 0 00-2 2v7h-4v-7a6 6 0 016-6zM2 9h4v12H2z"/><circle cx="4" cy="4" r="2"/></svg>
+              </a>
+            </div>
+          </div>
+          <div class="doc-card__info">
+            <h4>Magdalena</h4>
+            <span class="doc-card__spec">Odontóloga General</span>
+            <p>Comprometida con la atención integral del paciente y los últimos avances en odontología digital.</p>
+            <span class="doc-card__tag">Odontología General</span>
           </div>
         </article>
       </div>
@@ -507,7 +537,7 @@
               </div>
               <div>
                 <strong>Teléfono</strong>
-                <span><a href="tel:+543415550200">(0345) 421 6043</a></span>
+                <span><a href="tel:+543415550200">(0341) 555-0200</a></span>
               </div>
             </li>
             <li class="info-item">
@@ -525,7 +555,7 @@
               </div>
               <div>
                 <strong>Email</strong>
-                <span><a href="mailto:turnos@amco.com.ar">amco.odontologiadigital@gmail.com</a></span>
+                <span><a href="mailto:turnos@amco.com.ar">turnos@amco.com.ar</a></span>
               </div>
             </li>
           </ul>
@@ -543,7 +573,15 @@
   <footer class="footer" role="contentinfo">
     <div class="footer__top">
       <div class="footer__brand">
-        <span class="footer__logo" aria-label="AMCO">AMCO</span>
+        <span class="footer__logo" aria-label="AMCO">
+          <svg viewBox="0 0 220 95" xmlns="http://www.w3.org/2000/svg" style="height:44px;width:auto;display:block;" aria-hidden="true">
+            <path d="M75 38 C75 18, 91 6, 110 6 C129 6, 145 18, 145 38 C145 26, 130 16, 110 16 C90 16, 75 26, 75 38Z" fill="#4ECDC4"/>
+            <path d="M82 38 C82 22, 94 13, 110 13 C126 13, 138 22, 138 38 C138 28, 127 20, 110 20 C93 20, 82 28, 82 38Z" fill="#2A9D8F"/>
+            <text x="110" y="68" text-anchor="middle" font-family="'DM Sans', Arial, sans-serif" font-weight="700" font-size="24" letter-spacing="12" fill="currentColor">AMCO</text>
+            <line x1="60" y1="73" x2="160" y2="73" stroke="currentColor" stroke-width="0.8" opacity="0.4"/>
+            <text x="110" y="84" text-anchor="middle" font-family="'DM Sans', Arial, sans-serif" font-weight="400" font-size="8" letter-spacing="2.5" fill="currentColor" opacity="0.8">odontología digital</text>
+          </svg>
+        </span>
         <p>Centro odontológico con más de 15 años comprometido con la salud bucal y la sonrisa de nuestros pacientes.</p>
       </div>
       <nav class="footer__col" aria-label="Servicios">
@@ -563,7 +601,7 @@
           <li><a href="#resenas">Reseñas</a></li>
           <li><a href="#contacto">Realizar consulta</a></li>
           <li><a href="https://www.instagram.com/amco_odontologia/">Instagram</a></li>
-          <li><a href="https://wa.me/5493455287370" target="_blank" rel="noopener">WhatsApp</a></li>
+          <li><a href="https://wa.me/5493454404511" target="_blank" rel="noopener">WhatsApp</a></li>
         </ul>
       </nav>
     </div>
@@ -574,7 +612,7 @@
   </footer>
 
   <!-- ── WhatsApp flotante ─────────────── -->
-  <a href="https://wa.me/5493455287370"
+  <a href="https://wa.me/5493454404511"
      class="whatsapp-float"
      target="_blank"
      rel="noopener"

@@ -1,12 +1,14 @@
+'use strict';
+
 const SECTION_TITLES = {
   dashboard:'Dashboard', turnos:'Turnos', eliminados:'Turnos eliminados',
   analytics:'Analítica', usuarios:'Usuarios', pacientes:'Pacientes',
   'historial-hoy':'Historial del día'
-}
+};
 
-;
-const BASE_URL = "https://amco-production.up.railway.app";
-'use strict';
+const BASE_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost')
+  ? ''
+  : 'http://localhost:3001';
 
 const State = {
   token:null, username:null, role:null, medico:null, nombre:null,
