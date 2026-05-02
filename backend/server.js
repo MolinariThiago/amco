@@ -1,5 +1,8 @@
 'use strict';
 
+// Cargar variables de entorno desde .env (útil en desarrollo local)
+require('dotenv').config({ path: __dirname + '/.env' });
+
 const express    = require('express');
 const cors       = require('cors');
 const path       = require('path');
@@ -81,25 +84,41 @@ async function initDB() {
       );
 
       CREATE TABLE IF NOT EXISTS pacientes (
-        id                SERIAL PRIMARY KEY,
-        nombre            TEXT NOT NULL,
-        email             TEXT DEFAULT '',
-        telefono          TEXT DEFAULT '',
-        fecha_nacimiento  TEXT DEFAULT '',
-        dni               TEXT DEFAULT '',
-        observaciones     TEXT DEFAULT '',
-        historial_clinico TEXT DEFAULT '',
-        estado_civil      TEXT DEFAULT '',
-        profesion         TEXT DEFAULT '',
-        direccion         TEXT DEFAULT '',
-        obrasocial        TEXT DEFAULT '',
-        indicacion        TEXT DEFAULT '',
-        medicacion        TEXT DEFAULT '',
-        trat_inicio       TEXT DEFAULT '',
-        trat_termino      TEXT DEFAULT '',
-        anamnesis         JSONB DEFAULT '{}',
-        odontograma       JSONB DEFAULT '{}',
-        created_at        TIMESTAMPTZ DEFAULT NOW()
+        id                  SERIAL PRIMARY KEY,
+        nombre              TEXT NOT NULL,
+        email               TEXT DEFAULT '',
+        telefono            TEXT DEFAULT '',
+        fecha_nacimiento    TEXT DEFAULT '',
+        dni                 TEXT DEFAULT '',
+        observaciones       TEXT DEFAULT '',
+        historial_clinico   TEXT DEFAULT '',
+        estado_civil        TEXT DEFAULT '',
+        profesion           TEXT DEFAULT '',
+        direccion           TEXT DEFAULT '',
+        obrasocial          TEXT DEFAULT '',
+        indicacion          TEXT DEFAULT '',
+        medicacion          TEXT DEFAULT '',
+        trat_inicio         TEXT DEFAULT '',
+        trat_termino        TEXT DEFAULT '',
+        anamnesis           JSONB DEFAULT '{}',
+        odontograma         JSONB DEFAULT '{}',
+        credencial          TEXT DEFAULT '',
+        titular             TEXT DEFAULT '',
+        grupo_familiar      TEXT DEFAULT '',
+        parentesco          TEXT DEFAULT '',
+        edad                TEXT DEFAULT '',
+        localidad           TEXT DEFAULT '',
+        trabajo             TEXT DEFAULT '',
+        rep_nombre          TEXT DEFAULT '',
+        rep_domicilio       TEXT DEFAULT '',
+        rep_dni             TEXT DEFAULT '',
+        rep_relacion        TEXT DEFAULT '',
+        ultima_consulta     TEXT DEFAULT '',
+        medico_cabecera     TEXT DEFAULT '',
+        tratamiento_medico  TEXT DEFAULT '',
+        fecha_inicio_trat   TEXT DEFAULT '',
+        trabajos            JSONB DEFAULT '[]',
+        created_at          TIMESTAMPTZ DEFAULT NOW()
       );
 
       CREATE TABLE IF NOT EXISTS analytics (
@@ -110,6 +129,30 @@ async function initDB() {
         created_at  TIMESTAMPTZ DEFAULT NOW()
       );
     `);
+
+    // Migración segura: agregar columnas nuevas a pacientes si no existen
+    // (para bases de datos ya creadas antes de esta versión)
+    const newCols = [
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS credencial TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS titular TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS grupo_familiar TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS parentesco TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS edad TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS localidad TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS trabajo TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS rep_nombre TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS rep_domicilio TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS rep_dni TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS rep_relacion TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS ultima_consulta TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS medico_cabecera TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS tratamiento_medico TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS fecha_inicio_trat TEXT DEFAULT ''",
+      "ALTER TABLE pacientes ADD COLUMN IF NOT EXISTS trabajos JSONB DEFAULT '[]'",
+    ];
+    for (const sql of newCols) {
+      await client.query(sql);
+    }
 
     // Insertar admin por defecto si no existe
     const exists = await client.query(`SELECT id FROM users WHERE username = 'admin'`);
@@ -203,6 +246,23 @@ function mapPaciente(row) {
     tratTermino:      row.trat_termino,
     anamnesis:        row.anamnesis,
     odontograma:      row.odontograma,
+    // Campos ficha física
+    credencial:       row.credencial,
+    titular:          row.titular,
+    grupoFamiliar:    row.grupo_familiar,
+    parentesco:       row.parentesco,
+    edad:             row.edad,
+    localidad:        row.localidad,
+    trabajo:          row.trabajo,
+    repNombre:        row.rep_nombre,
+    repDomicilio:     row.rep_domicilio,
+    repDni:           row.rep_dni,
+    repRelacion:      row.rep_relacion,
+    ultimaConsulta:   row.ultima_consulta,
+    medicoCabecera:   row.medico_cabecera,
+    tratamientoMedico:row.tratamiento_medico,
+    fechaInicioTrat:  row.fecha_inicio_trat,
+    trabajos:         row.trabajos,
     createdAt:        row.created_at,
   };
 }
@@ -418,18 +478,31 @@ app.get('/api/pacientes', auth, adminOnly, async (req, res) => {
 
 app.post('/api/pacientes', auth, adminOnly, async (req, res) => {
   try {
-    const { nombre, email = '', telefono = '', fechaNacimiento = '', dni = '', observaciones = '',
-            estadoCivil = '', profesion = '', direccion = '', obrasocial = '', indicacion = '',
-            medicacion = '', tratInicio = '', tratTermino = '', anamnesis = {}, odontograma = {} } = req.body;
+    const {
+      nombre, email = '', telefono = '', fechaNacimiento = '', dni = '', observaciones = '',
+      estadoCivil = '', profesion = '', direccion = '', obrasocial = '', indicacion = '',
+      medicacion = '', tratInicio = '', tratTermino = '', anamnesis = {}, odontograma = {},
+      credencial = '', titular = '', grupoFamiliar = '', parentesco = '', edad = '',
+      localidad = '', trabajo = '', repNombre = '', repDomicilio = '', repDni = '',
+      repRelacion = '', ultimaConsulta = '', medicoCabecera = '', tratamientoMedico = '',
+      fechaInicioTrat = '', trabajos = [],
+    } = req.body;
     if (!nombre) return res.status(400).json({ error: 'El nombre es obligatorio' });
     const result = await pool.query(
       `INSERT INTO pacientes (nombre, email, telefono, fecha_nacimiento, dni, observaciones,
-         estado_civil, profesion, direccion, obrasocial, indicacion,
-         medicacion, trat_inicio, trat_termino, anamnesis, odontograma)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16) RETURNING id`,
+         estado_civil, profesion, direccion, obrasocial, indicacion, medicacion,
+         trat_inicio, trat_termino, anamnesis, odontograma,
+         credencial, titular, grupo_familiar, parentesco, edad, localidad, trabajo,
+         rep_nombre, rep_domicilio, rep_dni, rep_relacion,
+         ultima_consulta, medico_cabecera, tratamiento_medico, fecha_inicio_trat, trabajos)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,
+               $17,$18,$19,$20,$21,$22,$23,$24,$25,$26,$27,$28,$29,$30,$31,$32) RETURNING id`,
       [nombre.trim(), email.trim(), telefono.trim(), fechaNacimiento.trim(), dni.trim(),
        observaciones.trim(), estadoCivil, profesion, direccion, obrasocial, indicacion,
-       medicacion, tratInicio, tratTermino, JSON.stringify(anamnesis), JSON.stringify(odontograma)]
+       medicacion, tratInicio, tratTermino, JSON.stringify(anamnesis), JSON.stringify(odontograma),
+       credencial, titular, grupoFamiliar, parentesco, edad, localidad, trabajo,
+       repNombre, repDomicilio, repDni, repRelacion,
+       ultimaConsulta, medicoCabecera, tratamientoMedico, fechaInicioTrat, JSON.stringify(trabajos)]
     );
     res.status(201).json({ ok: true, id: result.rows[0].id });
   } catch (err) {
@@ -451,6 +524,13 @@ app.patch('/api/pacientes/:id', auth, adminOnly, async (req, res) => {
       obrasocial: 'obrasocial', indicacion: 'indicacion', medicacion: 'medicacion',
       tratInicio: 'trat_inicio', tratTermino: 'trat_termino',
       anamnesis: 'anamnesis', odontograma: 'odontograma',
+      // Campos ficha física
+      credencial: 'credencial', titular: 'titular', grupoFamiliar: 'grupo_familiar',
+      parentesco: 'parentesco', edad: 'edad', localidad: 'localidad', trabajo: 'trabajo',
+      repNombre: 'rep_nombre', repDomicilio: 'rep_domicilio', repDni: 'rep_dni',
+      repRelacion: 'rep_relacion', ultimaConsulta: 'ultima_consulta',
+      medicoCabecera: 'medico_cabecera', tratamientoMedico: 'tratamiento_medico',
+      fechaInicioTrat: 'fecha_inicio_trat', trabajos: 'trabajos',
     };
     const updates = []; const params = []; let idx = 1;
     for (const [jsKey, dbCol] of Object.entries(fieldMap)) {

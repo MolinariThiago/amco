@@ -44,6 +44,7 @@
   function toggleMenu(e) { e.preventDefault(); e.stopPropagation(); mobileMenu.classList.contains('open') ? closeMenu() : openMenu(); }
   hamburger?.addEventListener('click', toggleMenu);
   hamburger?.addEventListener('touchend', (e) => {
+    e.preventDefault(); // evitar que el navegador genere el click sintético
     toggleMenu(e);
   });
 

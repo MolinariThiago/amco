@@ -82,9 +82,9 @@
   const scrollMilestones = new Set();
 
   window.addEventListener('scroll', () => {
-    const scrollPct = Math.round(
-      (window.scrollY / (document.documentElement.scrollHeight - window.innerHeight)) * 100
-    );
+    const scrollable = document.documentElement.scrollHeight - window.innerHeight;
+    if (scrollable <= 0) return; // página no scrolleable
+    const scrollPct = Math.round((window.scrollY / scrollable) * 100);
 
     if (scrollPct > maxScroll) maxScroll = scrollPct;
 
