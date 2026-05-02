@@ -743,3 +743,15 @@
     grid-template-columns: 1fr;
   }
 }
+
+/* ── Doctor avatar placeholder (SVG animado) ── */
+.doc-card__img-wrap--avatar {
+  display: flex;
+  align-items: flex-end;
+  justify-content: center;
+  overflow: hidden;
+}
+.doc-card__img-wrap--avatar svg {
+  display: block;
+  flex-shrink: 0;
+}

@@ -41,8 +41,10 @@
     document.body.style.overflow = '';
   }
 
-  hamburger?.addEventListener('click', () => {
-    mobileMenu.classList.contains('open') ? closeMenu() : openMenu();
+  function toggleMenu(e) { e.preventDefault(); e.stopPropagation(); mobileMenu.classList.contains('open') ? closeMenu() : openMenu(); }
+  hamburger?.addEventListener('click', toggleMenu);
+  hamburger?.addEventListener('touchend', (e) => {
+    toggleMenu(e);
   });
 
   menuClose?.addEventListener('click', closeMenu);
