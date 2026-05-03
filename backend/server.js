@@ -186,7 +186,7 @@ function generarLinkWhatsApp(turno) {
     fechaStr = `${d}/${m}/${y}`;
   }
   const mensaje =
-    `\uD83CUD33F *AMCO \u00B7 Centro Odontol\u00F3gico*\n\n` +
+    `🌿 *AMCO \u00B7 Centro Odontol\u00F3gico*\n\n` +
     `Hola ${primerNombre}! Recibimos tu consulta \uD83D\uDE4C\n\n` +
     `\uD83E\uDDB7 *${servicio}*\n` +
     `\uD83D\uDCC5 ${fechaStr} \u00B7 ${turno.hora || '-'} hs\n\n` +
