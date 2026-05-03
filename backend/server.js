@@ -48,9 +48,13 @@ app.use('/admin', express.static(path.resolve(__dirname, '../admin')));
 // ── PostgreSQL ────────────────────────────────────
 const pool = new Pool({
   connectionString: process.env.DATABASE_URL,
-  ssl: process.env.DATABASE_URL && process.env.DATABASE_URL.includes('railway')
-    ? { rejectUnauthorized: false }
-    : (process.env.DB_SSL === 'true' ? { rejectUnauthorized: false } : false),
+  ssl: process.env.DB_SSL === 'false'
+    ? false
+    : process.env.DB_SSL === 'true'
+      ? { rejectUnauthorized: false }
+      : process.env.DATABASE_URL && process.env.DATABASE_URL.includes('proxy.rlwy.net')
+        ? { rejectUnauthorized: false }   // URL pública → SSL sí
+        : false,                           // URL interna → SSL no
 });
 
 // ── DB init — crea tablas si no existen ───────────
