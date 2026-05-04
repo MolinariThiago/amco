@@ -193,7 +193,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       if (window.AMCO?.track) window.AMCO.track('turno_form_exito', window.location.pathname);
 
     } catch (err) {
-      showMsg('error', `⚠️ ${err.message || 'Hubo un problema al enviar tu consulta. Intentá de nuevo o llamanos al (0341) 555-0200.'}`);
+      showMsg('error', `⚠️ ${err.message || 'Hubo un problema al enviar tu consulta. Intentá de nuevo o llamanos al (0345) 421-6043.'}`);
       if (window.AMCO?.track) window.AMCO.track('turno_form_error', window.location.pathname);
     } finally {
       setLoading(false);
