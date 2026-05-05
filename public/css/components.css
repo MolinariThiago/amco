@@ -592,3 +592,16 @@
     height: 26px;
   }
 }
+
+/* ── Logo imagen real ── */
+.logo-img {
+  height: 48px;
+  width: auto;
+  display: block;
+  /* En header transparente (hero): el logo es oscuro sobre claro, se ve bien */
+  /* Cuando el header scrollea se mantiene igual */
+  transition: opacity var(--duration-base);
+}
+.logo:hover .logo-img {
+  opacity: 0.85;
+}
