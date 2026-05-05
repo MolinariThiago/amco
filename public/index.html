@@ -59,7 +59,7 @@
     <nav class="nav" role="navigation" aria-label="Navegación principal">
       <a href="#servicios" class="nav__link">Servicios</a>
       <a href="#equipo"    class="nav__link">Equipo</a>
-      <a href="#resenas"   class="nav__link">Reseñas</a>
+      <a href="#tomografia" class="nav__link">Tomografía</a>
       <a href="/admin"     class="nav__link nav__link--admin" target="_blank" rel="noopener">
         <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" aria-hidden="true"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0110 0v4"/></svg>
         Admin
@@ -78,7 +78,7 @@
     <nav>
       <a href="#servicios" class="mobile-menu__link">Servicios</a>
       <a href="#equipo"    class="mobile-menu__link">Equipo</a>
-      <a href="#resenas"   class="mobile-menu__link">Reseñas</a>
+      <a href="#tomografia" class="mobile-menu__link">Tomografía</a>
       <a href="#contacto"  class="mobile-menu__link">Turnos</a>
       <a href="/admin"     class="mobile-menu__link mobile-menu__link--admin" target="_blank">Panel Admin</a>
     </nav>
@@ -199,7 +199,7 @@
         <article class="svc-card">
           <span class="svc-card__num" aria-hidden="true">01</span>
           <div class="svc-card__ico" aria-hidden="true"><svg viewBox="0 0 24 24"><path d="M12 2C8 2 5 5 5 9c0 5 7 13 7 13s7-8 7-13c0-4-3-7-7-7z"/><circle cx="12" cy="9" r="2.5"/></svg></div>
-          <h3>Ortodoncia invisible</h3>
+          <h3>Ortodoncia y ortopedia</h3>
           <p>Alineadores transparentes que corrigen tu dentadura sin brackets visibles ni incomodidades.</p>
         </article>
         <article class="svc-card">
@@ -248,7 +248,7 @@
         <li class="step">
           <div class="step__circle" aria-hidden="true"><span>01</span></div>
           <h4>Consulta inicial</h4>
-          <p>Evaluamos tu salud bucal con diagnóstico digital completo y sin costo.</p>
+          <p>Evaluamos tu salud bucal con diagnóstico digital completo.</p>
         </li>
         <li class="step">
           <div class="step__circle" aria-hidden="true"><span>02</span></div>
@@ -275,7 +275,7 @@
           <p class="section-lbl">Nuestros especialistas</p>
           <h2 class="sec-title" id="team-title">El equipo detrás<br>de tu sonrisa</h2>
         </div>
-        <p class="sec-sub" style="max-width:380px">Profesionales con formación internacional comprometidos con tu bienestar.</p>
+        <p class="sec-sub" style="max-width:380px">Profesionales comprometidos con tu bienestar.</p>
       </div>
       <div class="doctors reveal reveal--delay">
         <article class="doc-card">
@@ -290,9 +290,9 @@
           </div>
           <div class="doc-card__info">
             <h4>Luisina B. Baccon</h4>
-            <span class="doc-card__spec">Odontóloga General · Odontopediatra</span>
+            <span class="doc-card__spec">Odontóloga General · Odontopedia</span>
             <p>Especialista en odontología general y en la atención integral de los más pequeños.</p>
-            <span class="doc-card__tag">Odontología General · Odontopediatría</span>
+            <span class="doc-card__tag">Odontología General · Odontopedia</span>
           </div>
         </article>
         <article class="doc-card">
@@ -307,7 +307,7 @@
           </div>
           <div class="doc-card__info">
             <h4>Soledad Cappello</h4>
-            <span class="doc-card__spec">Odontóloga General · Endodoncista · Odontopediatra</span>
+            <span class="doc-card__spec">Odontóloga General · Endodoncia · Odontopedia</span>
             <p>Dedicada a la salud bucal integral, con especial atención en endodoncia y cuidado pediátrico.</p>
             <span class="doc-card__tag">Odontología General · Endodoncia · Odontopediatría</span>
           </div>
@@ -324,9 +324,9 @@
           </div>
           <div class="doc-card__info">
             <h4>Francisco Molinari</h4>
-            <span class="doc-card__spec">Odontólogo General</span>
-            <p>Comprometido con la atención personalizada y la excelencia en odontología general.</p>
-            <span class="doc-card__tag">Odontología General</span>
+            <span class="doc-card__spec">Especialista en Rehabilitación Oral e Implantes</span>
+            <p>Especializado en la restauración integral de la función masticatoria y estética dental, con formación avanzada en implantología y prótesis sobre implantes.</p>
+            <span class="doc-card__tag">Rehabilitación Oral · Implantología · Prótesis</span>
           </div>
         </article>
         <article class="doc-card">
@@ -349,87 +349,134 @@
       </div>
     </section>
 
-    <!-- ── RESEÑAS ────────────────────────── -->
-    <section id="resenas" class="reviews" aria-labelledby="reviews-title">
-      <div class="reviews__top reveal">
-        <p class="section-lbl reviews__lbl">Lo que dicen nuestros pacientes</p>
-        <h2 class="sec-title" id="reviews-title">Historias reales,<br>sonrisas reales</h2>
-      </div>
-      <div class="reviews__grid reveal reveal--delay">
-        <article class="review-card">
-          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
-          <blockquote>"El equipo de AMCO me cambió la vida. Después de años sin sonreír, hoy lo hago sin pensarlo. El tratamiento fue cómodo y los resultados superaron todas mis expectativas."</blockquote>
-          <footer class="reviewer">
-            <div class="reviewer__avatar" aria-hidden="true">MG</div>
-            <div>
-              <span class="reviewer__name">María G.</span>
-              <span class="reviewer__date">Ortodoncia invisible · Marzo 2025</span>
+    <!-- ── TOMOGRAFÍA DENTAL ────────────── -->
+    <!-- ── TOMOGRAFÍA DENTAL ─────────────────── -->
+    <section id="tomografia" class="tomo-section" aria-labelledby="tomografia-title">
+      <div class="tomo-container">
+
+        <!-- LEFT COLUMN -->
+        <div class="tomo-col tomo-col--left reveal reveal--left">
+          <p class="section-lbl tomo-lbl">Diagnóstico por imagen de alta precisión</p>
+          <h2 class="sec-title tomo-title" id="tomografia-title">
+            Tomografía Dental 3D<br>de Alta <em>Precisión</em>
+          </h2>
+          <p class="tomo-intro">
+            Contamos con el <strong>Orthophos S de Dentsply Sirona</strong>, tomógrafo de última generación fabricado en Alemania, que combina imágenes 2D y 3D en un único equipo. Su tecnología de enfoque automático garantiza imágenes de resolución submilimétrica con la mínima dosis de radiación posible.
+          </p>
+          <ul class="tomo-features">
+            <li class="tomo-feature">
+              <span class="tomo-feature__icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"/><path d="M12 2a10 10 0 0 1 0 20"/><path d="M2 12h20"/><path d="M12 2c2.76 4 4 8 4 10s-1.24 6-4 10"/></svg>
+              </span>
+              <div>
+                <strong>Imágenes 2D y 3D de alta calidad</strong>
+                <span>Radiografías panorámicas, telerradiografías y tomografía volumétrica en un solo equipo</span>
+              </div>
+            </li>
+            <li class="tomo-feature">
+              <span class="tomo-feature__icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z"/></svg>
+              </span>
+              <div>
+                <strong>Baja radiación</strong>
+                <span>Tecnología de dosis adaptativa que calibra automáticamente la exposición mínima necesaria</span>
+              </div>
+            </li>
+            <li class="tomo-feature">
+              <span class="tomo-feature__icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
+              </span>
+              <div>
+                <strong>Diagnóstico preciso</strong>
+                <span>Resolución submilimétrica para planificación de implantes, evaluación ósea y cirugías complejas</span>
+              </div>
+            </li>
+            <li class="tomo-feature">
+              <span class="tomo-feature__icon">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><rect x="2" y="3" width="20" height="14" rx="2"/><path d="M8 21h8M12 17v4"/></svg>
+              </span>
+              <div>
+                <strong>Tecnología alemana avanzada</strong>
+                <span>Software integrado de planificación con revisión inmediata del estudio en la misma consulta</span>
+              </div>
+            </li>
+          </ul>
+        </div>
+
+        <!-- CENTER COLUMN — IMAGES -->
+        <div class="tomo-col tomo-col--images reveal">
+          <div class="tomo-img-wrap tomo-img-wrap--top">
+            <img
+              src="images/tomografia-1.jpg"
+              alt="Tomógrafo Orthophos S Dentsply Sirona — vista general"
+              class="tomo-img"
+              loading="lazy"
+            />
+            <div class="tomo-img__badge">Orthophos S</div>
+          </div>
+          <div class="tomo-img-wrap tomo-img-wrap--bottom">
+            <img
+              src="images/tomografia-2.jpg"
+              alt="Tomógrafo Orthophos S — detalle del brazo"
+              class="tomo-img"
+              loading="lazy"
+            />
+            <div class="tomo-img__badge tomo-img__badge--alt">Dentsply Sirona</div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div class="tomo-col tomo-col--right reveal reveal--right">
+          <div class="tomo-benefits">
+            <h3 class="tomo-benefits__title">Beneficios para el paciente</h3>
+            <ul class="tomo-benefits__list">
+              <li>
+                <span class="tomo-benefits__num">01</span>
+                <div>
+                  <strong>Estudios más rápidos</strong>
+                  <span>La toma dura segundos — sin preparación previa ni internación</span>
+                </div>
+              </li>
+              <li>
+                <span class="tomo-benefits__num">02</span>
+                <div>
+                  <strong>Mayor comodidad</strong>
+                  <span>El paciente permanece de pie o sentado durante todo el proceso, sin dolor</span>
+                </div>
+              </li>
+              <li>
+                <span class="tomo-benefits__num">03</span>
+                <div>
+                  <strong>Resultados más precisos</strong>
+                  <span>Imágenes de alta definición que permiten visualizar estructuras imposibles de ver con radiografías convencionales</span>
+                </div>
+              </li>
+              <li>
+                <span class="tomo-benefits__num">04</span>
+                <div>
+                  <strong>Mejor planificación</strong>
+                  <span>Tratamientos de implantes, cirugías y ortodoncia planificados con exactitud milimétrica</span>
+                </div>
+              </li>
+            </ul>
+          </div>
+
+          <div class="tomo-closing">
+            <p>
+              Todos los estudios de diagnóstico por imagen disponibles <strong>en un único lugar</strong> y en la misma visita. Nuestros profesionales analizan las imágenes en estación de trabajo digital integrada y comparten los resultados con el paciente al instante.
+            </p>
+            <div class="tomo-badge">
+              <span class="tomo-badge__icon">🇩🇪</span>
+              <span>Tecnología alemana · Orthophos S · Dentsply Sirona</span>
             </div>
-          </footer>
-        </article>
-        <article class="review-card">
-          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
-          <blockquote>"Llevé a mis hijos y la experiencia fue increíble. La Dra. Cappello tiene una paciencia única. Los chicos salieron felices del consultorio, algo que jamás pensé posible."</blockquote>
-          <footer class="reviewer">
-            <div class="reviewer__avatar" aria-hidden="true">RP</div>
-            <div>
-              <span class="reviewer__name">Roberto P.</span>
-              <span class="reviewer__date">Odontopediatría · Enero 2026</span>
-            </div>
-          </footer>
-        </article>
-        <article class="review-card">
-          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
-          <blockquote>"Me realizaron dos implantes y el proceso fue completamente sin dolor. La tecnología que tienen es de otro nivel. Muy profesionales y atentos en absolutamente todo."</blockquote>
-          <footer class="reviewer">
-            <div class="reviewer__avatar" aria-hidden="true">LC</div>
-            <div>
-              <span class="reviewer__name">Laura C.</span>
-              <span class="reviewer__date">Implantes · Febrero 2026</span>
-            </div>
-          </footer>
-        </article>
-        <article class="review-card">
-          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
-          <blockquote>"El blanqueamiento quedó espectacular. En una sola sesión noté una diferencia enorme. Consultorio moderno, limpio y el personal es sumamente amable."</blockquote>
-          <footer class="reviewer">
-            <div class="reviewer__avatar" aria-hidden="true">SV</div>
-            <div>
-              <span class="reviewer__name">Sofía V.</span>
-              <span class="reviewer__date">Blanqueamiento · Diciembre 2025</span>
-            </div>
-          </footer>
-        </article>
-        <article class="review-card">
-          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
-          <blockquote>"El Dr. Molinari me trató un problema de encías que tenía hace años. Explicó todo con claridad y el seguimiento post-operatorio fue impecable. Muy recomendable."</blockquote>
-          <footer class="reviewer">
-            <div class="reviewer__avatar" aria-hidden="true">FN</div>
-            <div>
-              <span class="reviewer__name">Fernando N.</span>
-              <span class="reviewer__date">Periodoncia · Noviembre 2025</span>
-            </div>
-          </footer>
-        </article>
-        <article class="review-card">
-          <div class="review-card__stars" aria-label="5 estrellas">★★★★★</div>
-          <blockquote>"Hacía años que postergaba ir al dentista por miedo. En AMCO me atendieron con tanta tranquilidad que volví sin dudar. Ahora los recomiendo a todos mis conocidos."</blockquote>
-          <footer class="reviewer">
-            <div class="reviewer__avatar" aria-hidden="true">AM</div>
-            <div>
-              <span class="reviewer__name">Andrea M.</span>
-              <span class="reviewer__date">Consulta general · Octubre 2025</span>
-            </div>
-          </footer>
-        </article>
-      </div>
-      <div class="reviews__summary reveal">
-        <span class="reviews__score" aria-label="Calificación 4.9 sobre 5">4.9 <span aria-hidden="true">★</span></span>
-        <p>Promedio en Google Reviews · Basado en más de 320 reseñas verificadas</p>
+          </div>
+        </div>
+
       </div>
     </section>
 
-    <!-- ── CTA BANNER ─────────────────────── -->
+
+        <!-- ── CTA BANNER ─────────────────────── -->
     <section class="cta-banner reveal" aria-label="Llamado a la acción">
       <h2>¿Listo para <em>transformar</em><br>tu sonrisa?</h2>
       <a href="#contacto" class="btn btn--gold">Realizar consulta</a>
@@ -537,7 +584,7 @@
               </div>
               <div>
                 <strong>Teléfono</strong>
-                <span><a href="tel:+543454216043">(0345) 421-6043</a></span>
+                <span><a href="tel:+543415550200">(0345) 421 6043</a></span>
               </div>
             </li>
             <li class="info-item">
@@ -546,7 +593,7 @@
               </div>
               <div>
                 <strong>Horarios</strong>
-                <span>Lun, Mié y Vie: 8:00–12:00 hs y 16:00–20:00 hs · Mar y Jue: 8:00–16:00 hs</span>
+                <span>Lun–Vie: 8:00–20:00 hs · Sáb: 9:00–18:00 hs</span>
               </div>
             </li>
             <li class="info-item">
@@ -555,7 +602,7 @@
               </div>
               <div>
                 <strong>Email</strong>
-                <span><a href="mailto:amco.odontologiadigital@gmail.com">amco.odontologiadigital@gmail.com</a></span>
+                <span><a href="mailto:amco.ofontologiadigital@gmail.com">amco.ofontologiadigital@gmail.com</a></span>
               </div>
             </li>
           </ul>
@@ -598,7 +645,7 @@
         <h5>Centro</h5>
         <ul>
           <li><a href="#equipo">Nuestro equipo</a></li>
-          <li><a href="#resenas">Reseñas</a></li>
+          <li><a href="#tomografia">Tomografía</a></li>
           <li><a href="#contacto">Realizar consulta</a></li>
           <li><a href="https://www.instagram.com/amco_odontologia/">Instagram</a></li>
           <li><a href="https://wa.me/5493455287370" target="_blank" rel="noopener">WhatsApp</a></li>

@@ -755,3 +755,280 @@
   display: block;
   flex-shrink: 0;
 }
+
+/* ══════════════════════════════════════════════
+   TOMOGRAFÍA DENTAL — Split Layout Section
+   ══════════════════════════════════════════════ */
+
+.tomo-section {
+  padding: var(--space-30) var(--gutter);
+  background: var(--color-white);
+  overflow: hidden;
+}
+
+.tomo-container {
+  max-width: var(--container-max);
+  margin: 0 auto;
+  display: grid;
+  grid-template-columns: 1fr 340px 1fr;
+  gap: 48px;
+  align-items: start;
+}
+
+/* ── Columns ── */
+.tomo-col {
+  display: flex;
+  flex-direction: column;
+  gap: 28px;
+}
+
+/* ── Label ── */
+.tomo-lbl {
+  justify-content: flex-start;
+}
+
+/* ── Title ── */
+.tomo-title {
+  margin-bottom: 0;
+}
+
+/* ── Intro paragraph ── */
+.tomo-intro {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  line-height: 1.8;
+}
+
+.tomo-intro strong {
+  color: var(--color-navy);
+}
+
+/* ── Feature list ── */
+.tomo-features {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tomo-feature {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.tomo-feature__icon {
+  flex-shrink: 0;
+  width: 38px;
+  height: 38px;
+  border-radius: var(--radius-md);
+  background: var(--color-navy-muted);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--color-navy);
+  transition: background var(--duration-base) var(--ease),
+              color var(--duration-base) var(--ease);
+}
+
+.tomo-feature:hover .tomo-feature__icon {
+  background: var(--color-gold);
+  color: var(--color-white);
+}
+
+.tomo-feature > div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tomo-feature strong {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-navy);
+}
+
+.tomo-feature span {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* ── Image column ── */
+.tomo-col--images {
+  gap: 16px;
+  position: sticky;
+  top: 100px;
+}
+
+.tomo-img-wrap {
+  position: relative;
+  border-radius: var(--radius-xl);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
+  line-height: 0;
+}
+
+.tomo-img-wrap--top {
+  transform: translateX(-8px);
+}
+
+.tomo-img-wrap--bottom {
+  transform: translateX(8px);
+}
+
+.tomo-img {
+  width: 100%;
+  height: 240px;
+  object-fit: cover;
+  object-position: center top;
+  display: block;
+  transition: transform 0.55s var(--ease);
+}
+
+.tomo-img-wrap:hover .tomo-img {
+  transform: scale(1.05);
+}
+
+.tomo-img__badge {
+  position: absolute;
+  bottom: 12px;
+  left: 12px;
+  background: rgba(27, 94, 87, 0.88);
+  backdrop-filter: blur(6px);
+  color: var(--color-gold-light);
+  font-family: var(--font-sans);
+  font-size: 11px;
+  font-weight: 600;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 5px 10px;
+  border-radius: var(--radius-sm);
+}
+
+.tomo-img__badge--alt {
+  background: rgba(59, 191, 179, 0.88);
+  color: var(--color-white);
+}
+
+/* ── Benefits block ── */
+.tomo-benefits {
+  background: var(--color-cream);
+  border-radius: var(--radius-xl);
+  padding: 32px;
+}
+
+.tomo-benefits__title {
+  font-family: var(--font-serif);
+  font-size: var(--text-lg);
+  font-weight: 600;
+  color: var(--color-navy);
+  margin-bottom: 24px;
+}
+
+.tomo-benefits__list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.tomo-benefits__list li {
+  display: flex;
+  align-items: flex-start;
+  gap: 14px;
+}
+
+.tomo-benefits__num {
+  flex-shrink: 0;
+  font-family: var(--font-serif);
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--color-gold);
+  line-height: 1.5;
+  padding-top: 1px;
+}
+
+.tomo-benefits__list li div {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.tomo-benefits__list li strong {
+  font-family: var(--font-sans);
+  font-size: var(--text-sm);
+  font-weight: 600;
+  color: var(--color-navy);
+}
+
+.tomo-benefits__list li span {
+  font-family: var(--font-sans);
+  font-size: 13px;
+  color: var(--color-text-muted);
+  line-height: 1.6;
+}
+
+/* ── Closing block ── */
+.tomo-closing {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+.tomo-closing p {
+  font-family: var(--font-sans);
+  font-size: var(--text-base);
+  color: var(--color-text-muted);
+  line-height: 1.8;
+}
+
+.tomo-closing p strong {
+  color: var(--color-navy);
+}
+
+.tomo-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-navy-muted);
+  border: 1px solid var(--color-cream-dark);
+  border-radius: var(--radius-full);
+  padding: 8px 16px;
+  font-family: var(--font-sans);
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--color-navy);
+  width: fit-content;
+}
+
+.tomo-badge__icon {
+  font-size: 16px;
+}
+
+/* ══ Reveal animations ══ */
+.reveal--left {
+  transform: translateX(-40px);
+  opacity: 0;
+  transition: transform 0.7s var(--ease), opacity 0.7s var(--ease);
+}
+
+.reveal--right {
+  transform: translateX(40px);
+  opacity: 0;
+  transition: transform 0.7s var(--ease), opacity 0.7s var(--ease);
+}
+
+.reveal--left.is-visible,
+.reveal--right.is-visible {
+  transform: translateX(0);
+  opacity: 1;
+}
+

@@ -90,6 +90,23 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
 
   document.querySelectorAll('.reveal').forEach(el => observer.observe(el));
 
+  /* Directional reveals for tomo section */
+  const dirObserver = new IntersectionObserver(
+    (entries) => {
+      entries.forEach((entry, i) => {
+        if (entry.isIntersecting) {
+          const delay = entry.target.classList.contains('reveal--right') ? 200 : 0;
+          setTimeout(() => {
+            entry.target.classList.add('is-visible');
+          }, delay);
+          dirObserver.unobserve(entry.target);
+        }
+      });
+    },
+    { threshold: 0.08, rootMargin: '0px 0px -30px 0px' }
+  );
+  document.querySelectorAll('.reveal--left, .reveal--right').forEach(el => dirObserver.observe(el));
+
   /* Slide-in from right for Magdalena card */
   const slideObserver = new IntersectionObserver(
     (entries) => {
@@ -193,7 +210,7 @@ document.querySelectorAll('a[href^="#"]').forEach(anchor => {
       if (window.AMCO?.track) window.AMCO.track('turno_form_exito', window.location.pathname);
 
     } catch (err) {
-      showMsg('error', `⚠️ ${err.message || 'Hubo un problema al enviar tu consulta. Intentá de nuevo o llamanos al (0345) 421-6043.'}`);
+      showMsg('error', `⚠️ ${err.message || 'Hubo un problema al enviar tu consulta. Intentá de nuevo o llamanos al (0341) 555-0200.'}`);
       if (window.AMCO?.track) window.AMCO.track('turno_form_error', window.location.pathname);
     } finally {
       setLoading(false);

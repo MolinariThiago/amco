@@ -223,3 +223,56 @@
 
   .about__badge strong { font-size: 28px; }
 }
+
+/* ── Tomografía Responsive ─────────────── */
+@media (max-width: 1024px) {
+  .tomo-container {
+    grid-template-columns: 1fr 280px 1fr;
+    gap: 32px;
+  }
+}
+
+@media (max-width: 860px) {
+  .tomo-container {
+    grid-template-columns: 1fr;
+    gap: 40px;
+  }
+
+  .tomo-col--images {
+    position: static;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 16px;
+  }
+
+  .tomo-img-wrap--top,
+  .tomo-img-wrap--bottom {
+    transform: none;
+  }
+
+  .tomo-img {
+    height: 200px;
+  }
+
+  .reveal--left,
+  .reveal--right {
+    transform: translateY(24px);
+    opacity: 0;
+  }
+
+  .reveal--left.is-visible,
+  .reveal--right.is-visible {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@media (max-width: 560px) {
+  .tomo-col--images {
+    grid-template-columns: 1fr;
+  }
+
+  .tomo-benefits {
+    padding: 24px 20px;
+  }
+}
