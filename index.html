@@ -5,9 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta name="description" content="AMCO Centro Odontológico — Tratamientos invisibles, cómodos y personalizados en Concordia, Entre Ríos.">
   <meta name="theme-color" content="#1A2B3C">
+  <meta name="robots" content="index, follow">
+  <meta name="googlebot" content="index, follow">
+
+  <!-- URL canónica — CLAVE para SEO con dominio nuevo -->
+  <link rel="canonical" href="https://amcoodontologia.com.ar/">
 
   <!-- Open Graph / WhatsApp / redes sociales -->
   <meta property="og:type"        content="website">
+  <meta property="og:url"         content="https://amcoodontologia.com.ar/">
   <meta property="og:site_name"   content="AMCO Centro Odontológico">
   <meta property="og:title"       content="AMCO · Centro Odontológico · Concordia">
   <meta property="og:description" content="Tratamientos invisibles, cómodos y personalizados con tecnología de última generación. +2.800 pacientes. 15 años de experiencia.">
@@ -16,6 +22,7 @@
   <meta property="og:image:height" content="630">
   <meta property="og:locale"      content="es_AR">
   <meta name="twitter:card"       content="summary_large_image">
+  <meta name="twitter:site"       content="@amcoodontologia">
   <meta name="twitter:title"      content="AMCO · Centro Odontológico · Concordia">
   <meta name="twitter:description" content="Tratamientos invisibles, cómodos y personalizados. +2.800 pacientes en Concordia, Entre Ríos.">
   <meta name="twitter:image"      content="https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800&q=80">
@@ -36,6 +43,45 @@
   <link rel="stylesheet" href="public/css/components.css">
   <link rel="stylesheet" href="public/css/sections.css">
   <link rel="stylesheet" href="public/css/responsive.css">
+
+  <!-- Schema.org — Datos estructurados para Google (dentista local) -->
+  <script type="application/ld+json">
+  {
+    "@context": "https://schema.org",
+    "@type": "Dentist",
+    "name": "AMCO Centro Odontológico",
+    "url": "https://amcoodontologia.com.ar",
+    "logo": "https://amcoodontologia.com.ar/logo.png",
+    "image": "https://images.unsplash.com/photo-1606811841689-23dfddce3e95?w=800&q=80",
+    "description": "Centro odontológico en Concordia, Entre Ríos. Tratamientos invisibles, cómodos y personalizados con tecnología de última generación. Más de 2.800 pacientes y 15 años de experiencia.",
+    "address": {
+      "@type": "PostalAddress",
+      "addressLocality": "Concordia",
+      "addressRegion": "Entre Ríos",
+      "addressCountry": "AR"
+    },
+    "geo": {
+      "@type": "GeoCoordinates",
+      "latitude": "-31.3921",
+      "longitude": "-58.0204"
+    },
+    "openingHoursSpecification": [
+      {
+        "@type": "OpeningHoursSpecification",
+        "dayOfWeek": ["Monday","Tuesday","Wednesday","Thursday","Friday"],
+        "opens": "08:00",
+        "closes": "20:00"
+      }
+    ],
+    "sameAs": [
+      "https://www.instagram.com/amcoodontologia",
+      "https://www.facebook.com/amcoodontologia"
+    ],
+    "priceRange": "$$",
+    "medicalSpecialty": "Dentistry",
+    "hasMap": "https://maps.google.com/?q=Concordia,Entre+Rios,Argentina"
+  }
+  </script>
 </head>
 <body>
 
@@ -355,7 +401,7 @@
             </div>
           </div>
           <div class="doc-card__info">
-            <h4>Magdalena</h4>
+            <h4>Magdalena Trostdorf</h4>
             <span class="doc-card__spec">Ortodoncia · Ortopedia · Odontóloga General</span>
             <p>Especializada en ortopedia y ortodoncia, con formación en odontología general para una atención integral.</p>
             <span class="doc-card__tag">Ortodoncia · Ortopediatria · Odontología General</span>
