@@ -686,9 +686,21 @@ window.openPacienteModal = function(id) {
   initOdontograma(p?.odontograma || {});
 
   document.getElementById('pmDeleteBtn').style.display = id ? 'inline-flex' : 'none';
+  setFichaTab('datos');
   document.getElementById('pacienteModal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
 };
+
+function setFichaTab(tab) {
+  document.querySelectorAll('#fichaTabs .ficha-tab').forEach(b =>
+    b.classList.toggle('active', b.dataset.tab === tab));
+  document.querySelectorAll('#pacienteModal .ficha-section[data-tab-panel]').forEach(s =>
+    s.classList.toggle('active', s.dataset.tabPanel === tab));
+}
+document.getElementById('fichaTabs')?.addEventListener('click', e => {
+  const btn = e.target.closest('.ficha-tab');
+  if (btn) setFichaTab(btn.dataset.tab);
+});
 
 window.openHistorial = function(id) {
   openPacienteModal(id);

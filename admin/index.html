@@ -390,10 +390,18 @@
       <h2 id="pacienteModalTitle">Ficha clínica</h2>
       <button class="modal__close" id="pacienteModalClose">✕</button>
     </div>
+    <div class="ficha-tabs" id="fichaTabs">
+      <button class="ficha-tab active" data-tab="datos">👤 Datos</button>
+      <button class="ficha-tab" data-tab="representante">👨‍👩‍👧 Representante</button>
+      <button class="ficha-tab" data-tab="odontograma">🦷 Odontograma</button>
+      <button class="ficha-tab" data-tab="anamnesis">📋 Anamnesis</button>
+      <button class="ficha-tab" data-tab="plan">📝 Plan</button>
+      <button class="ficha-tab" data-tab="trabajos">🗂 Trabajos</button>
+    </div>
     <div class="modal__body" style="padding-bottom:8px">
 
       <!-- ── DATOS PERSONALES ── -->
-      <div class="ficha-section">
+      <div class="ficha-section" data-tab-panel="datos">
         <div class="ficha-section__title">👤 Datos del paciente</div>
         <div class="ficha-grid ficha-grid--3">
           <div class="form-group-adm ficha-col--full">
@@ -460,7 +468,7 @@
       </div>
 
       <!-- ── REPRESENTANTE (menores / incapacitados) ── -->
-      <div class="ficha-section">
+      <div class="ficha-section" data-tab-panel="representante">
         <div class="ficha-section__title">👨‍👩‍👧 Representante (en caso de menores o incapacitados)</div>
         <div class="ficha-grid ficha-grid--3">
           <div class="form-group-adm ficha-col--full">
@@ -483,7 +491,7 @@
       </div>
 
       <!-- ── ODONTOGRAMA ── -->
-      <div class="ficha-section">
+      <div class="ficha-section" data-tab-panel="odontograma">
         <div class="ficha-section__title">🦷 Odontograma</div>
         <div class="odontograma-wrap">
           <div class="odontograma-legend">
@@ -520,7 +528,7 @@
       </div>
 
       <!-- ── ANAMNESIS ── -->
-      <div class="ficha-section">
+      <div class="ficha-section" data-tab-panel="anamnesis">
         <div class="ficha-section__title">📋 Anamnesis</div>
         <div class="ficha-grid ficha-grid--2" style="margin-bottom:10px">
           <div class="form-group-adm">
@@ -636,7 +644,7 @@
       </div>
 
       <!-- ── PLAN DE TRATAMIENTO ── -->
-      <div class="ficha-section">
+      <div class="ficha-section" data-tab-panel="plan">
         <div class="ficha-section__title" style="color:var(--adm-gold)">📝 Plan de tratamiento</div>
         <div class="ficha-grid ficha-grid--2" style="margin-bottom:10px">
           <div class="form-group-adm">
@@ -655,7 +663,7 @@
       </div>
 
       <!-- ── TRABAJOS REALIZADOS ── -->
-      <div class="ficha-section">
+      <div class="ficha-section" data-tab-panel="trabajos">
         <div class="ficha-section__title">🗂 Trabajos realizados</div>
         <div style="overflow-x:auto">
           <table id="trabajosTable" style="width:100%;border-collapse:collapse;font-size:13px">

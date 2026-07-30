@@ -366,6 +366,13 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
 .cred-card__desc{font-size:12px;color:var(--adm-muted)}
 
 /* ═══ FICHA CLÍNICA ═══ */
+.ficha-tabs{position:sticky;top:65px;z-index:9;display:flex;gap:2px;padding:0 24px;background:var(--adm-surface);border-bottom:1px solid var(--adm-border);overflow-x:auto;scrollbar-width:none}
+.ficha-tabs::-webkit-scrollbar{display:none}
+.ficha-tab{display:flex;align-items:center;gap:6px;padding:12px 14px;border:none;background:transparent;font-size:13px;font-weight:500;color:var(--adm-muted);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;font-family:var(--font-sans)}
+.ficha-tab:hover{color:var(--adm-text)}
+.ficha-tab.active{color:var(--adm-text);font-weight:600;border-bottom-color:var(--adm-gold)}
+.ficha-section[data-tab-panel]{display:none}
+.ficha-section[data-tab-panel].active{display:block}
 .ficha-section{border:1px solid var(--adm-border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;background:var(--adm-surface-2);box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .ficha-section__title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--adm-text-2);margin-bottom:16px;padding-bottom:11px;border-bottom:2px solid var(--adm-border)}
 .ficha-grid{display:grid;gap:10px}
