@@ -658,6 +658,31 @@ app.post('/api/users', auth, adminOnly, async (req, res) => {
   }
 });
 
+app.patch('/api/users/:username', auth, adminOnly, async (req, res) => {
+  try {
+    const { nombre, password } = req.body;
+    const updates = []; const params = []; let idx = 1;
+    if (nombre !== undefined && String(nombre).trim() !== '') {
+      updates.push(`nombre = $${idx++}`);
+      params.push(String(nombre).trim());
+    }
+    if (password !== undefined && String(password).trim() !== '') {
+      updates.push(`password = $${idx++}`, `hashed = true`);
+      params.push(hashPassword(String(password).trim()));
+    }
+    if (updates.length === 0) return res.status(400).json({ error: 'Nada para actualizar' });
+    params.push(req.params.username);
+    const r = await pool.query(
+      `UPDATE users SET ${updates.join(', ')} WHERE username = $${idx} RETURNING id`, params
+    );
+    if (r.rows.length === 0) return res.status(404).json({ error: 'Usuario no encontrado' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('PATCH /api/users error:', err);
+    res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
 app.delete('/api/users/:username', auth, adminOnly, async (req, res) => {
   try {
     if (req.params.username === 'admin') return res.status(400).json({ error: 'No se puede eliminar al admin' });

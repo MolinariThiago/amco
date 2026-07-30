@@ -35,6 +35,7 @@ const API = {
   getUsers:   ()     => API.req('GET',    '/api/users'),
   addUser:    (b)    => API.req('POST',   '/api/users', b),
   delUser:    (u)    => API.req('DELETE', `/api/users/${u}`),
+  patchUser:  (u,b)  => API.req('PATCH',  `/api/users/${u}`, b),
   getPacientes:    ()      => API.req('GET',    '/api/pacientes'),
   addPaciente:     (b)     => API.req('POST',   '/api/pacientes', b),
   patchPaciente:   (id, b) => API.req('PATCH',  `/api/pacientes/${id}`, b),
@@ -403,6 +404,7 @@ async function loadUsuarios() {
   try {
     const data=await API.getUsers();
     if(!tbody) return;
+    State._usuarios = data.data;
     tbody.innerHTML=data.data.map(u=>`<tr>
       <td><strong>${escHtml(u.username)}</strong></td>
       <td>${escHtml(u.nombre||'—')}</td>
@@ -410,11 +412,44 @@ async function loadUsuarios() {
         ?'<span class="role-tag role-tag--admin">Admin</span>'
         :'<span class="role-tag role-tag--doctor">Doctor</span>'}</td>
       <td>${medicoLabel(u.medico)}</td>
-      <td>${u.username==='admin'?'—':`<button class="action-btn action-btn--danger" onclick="deleteUser('${u.username}')">
+      <td><button class="action-btn" onclick="editUser('${u.username}')">
+        <svg viewBox="0 0 24 24" width="12" height="12"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar</button>
+      ${u.username==='admin'?'':`<button class="action-btn action-btn--danger" onclick="deleteUser('${u.username}')">
         <svg viewBox="0 0 24 24" width="12" height="12"><path d="M3 6h18M8 6V4h8v2M19 6l-1 14H6L5 6"/></svg> Eliminar</button>`}</td>
     </tr>`).join('');
   } catch(err) { showToast('Error: '+err.message,'error'); }
 }
+
+window.editUser = function(username) {
+  const u = (State._usuarios || []).find(x => x.username === username);
+  if (!u) return;
+  document.getElementById('ueUsername').value = u.username;
+  document.getElementById('ueNombre').value   = u.nombre || '';
+  document.getElementById('uePassword').value = '';
+  document.getElementById('userEditModal').style.display = 'flex';
+};
+
+function closeUserEditModal() {
+  document.getElementById('userEditModal').style.display = 'none';
+}
+document.getElementById('userEditClose')?.addEventListener('click', closeUserEditModal);
+document.getElementById('userEditBackdrop')?.addEventListener('click', closeUserEditModal);
+
+document.getElementById('ueSaveBtn')?.addEventListener('click', async () => {
+  const username = document.getElementById('ueUsername').value;
+  const nombre   = document.getElementById('ueNombre').value.trim();
+  const password = document.getElementById('uePassword').value.trim();
+  if (!nombre && !password) return showToast('Cambiá el nombre o ingresá una contraseña nueva','error');
+  const body = {};
+  if (nombre)   body.nombre   = nombre;
+  if (password) body.password = password;
+  try {
+    await API.patchUser(username, body);
+    showToast(password ? 'Usuario actualizado — la nueva contraseña ya está activa' : 'Usuario actualizado','success');
+    closeUserEditModal();
+    loadUsuarios();
+  } catch(err) { showToast('Error: '+err.message,'error'); }
+});
 
 window.deleteUser = async function(username) {
   if(!confirm(`¿Eliminar usuario "${username}"?`)) return;
