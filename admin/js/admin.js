@@ -867,39 +867,117 @@ document.getElementById('pmDeleteBtn')?.addEventListener('click', async () => {
 });
 
 /* ══════════════════════════════════════════════════
-   ODONTOGRAMA INTERACTIVO
+   ODONTOGRAMA INTERACTIVO — por caras y prestaciones
+
+   Formato de datos (JSONB en pacientes.odontograma):
+     { _tipo:'permanente',
+       "17": { pieza:{t:'corona',e:'r'}, caras:{ o:{t:'caries',e:'p'} } } }
+   e: 'p' = a realizar (rojo) · 'r' = realizado (azul)
+
+   Compatibilidad: el formato viejo ("17":"caries") se migra
+   automáticamente a pieza completa, sin perder nada.
 ══════════════════════════════════════════════════ */
-const TOOTH_ESTADOS = ['sano', 'caries', 'obturacion', 'corona', 'implante', 'extraccion', 'ausente'];
-const TOOTH_ICONS   = { sano:'🦷', caries:'🔴', obturacion:'🔵', corona:'👑', implante:'🟢', extraccion:'✖', ausente:'⬜' };
-const TOOTH_LABELS  = { sano:'Sano', caries:'Caries', obturacion:'Obturación', corona:'Corona', implante:'Implante', extraccion:'Extracción', ausente:'Ausente' };
 
-const TOP_TEETH = [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28];
-const BOT_TEETH = [48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38];
+// Catálogo de prestaciones. ambito: 'pieza' (todo el diente) o 'cara'.
+const OD_PRESTACIONES = [
+  // ── Por cara ──
+  { cod:'20', nom:'Caries',                  ambito:'cara'  },
+  { cod:'21', nom:'Obturación composite',    ambito:'cara'  },
+  { cod:'22', nom:'Obturación amalgama',     ambito:'cara'  },
+  { cod:'23', nom:'Ionómero',                ambito:'cara'  },
+  { cod:'24', nom:'Sellante',                ambito:'cara'  },
+  { cod:'25', nom:'Incrustación',            ambito:'cara'  },
+  { cod:'26', nom:'Desgaste / abrasión',     ambito:'cara'  },
+  // ── Pieza completa ──
+  { cod:'01', nom:'Pieza ausente',           ambito:'pieza', simbolo:'ausente'  },
+  { cod:'02', nom:'Extracción indicada',     ambito:'pieza', simbolo:'x'        },
+  { cod:'03', nom:'Pieza extraída',          ambito:'pieza', simbolo:'x'        },
+  { cod:'04', nom:'Implante',                ambito:'pieza', simbolo:'tornillo' },
+  { cod:'05', nom:'Corona',                  ambito:'pieza', simbolo:'circulo'  },
+  { cod:'06', nom:'Perno / muñón',           ambito:'pieza', simbolo:'perno'    },
+  { cod:'07', nom:'Endodoncia',              ambito:'pieza', simbolo:'linea'    },
+  { cod:'08', nom:'Prótesis fija',           ambito:'pieza', simbolo:'corchete' },
+  { cod:'09', nom:'Prótesis removible',      ambito:'pieza', simbolo:'corchete' },
+  { cod:'10', nom:'Resto radicular',         ambito:'pieza', simbolo:'relleno'  },
+  { cod:'11', nom:'Diente en erupción',      ambito:'pieza', simbolo:'flecha'   },
+  { cod:'12', nom:'Supernumerario',          ambito:'pieza', simbolo:'mas'      },
+  { cod:'13', nom:'Fractura',                ambito:'pieza', simbolo:'rayo'     },
+  { cod:'14', nom:'Movilidad',               ambito:'pieza', simbolo:'onda'     },
+];
+const OD_PREST_BY_COD = Object.fromEntries(OD_PRESTACIONES.map(p => [p.cod, p]));
 
-// Estado activo seleccionado en la leyenda
-let _odPickState = 'caries';
+// Mapeo del formato viejo → código de prestación
+const OD_LEGACY = {
+  sano:null, caries:'20', obturacion:'21', corona:'05',
+  implante:'04', extraccion:'02', ausente:'01',
+};
 
-function initOdontograma(data) {
-  State._odontograma = { ...data };
-  renderOdontogramaRow('odTopRow', TOP_TEETH);
-  renderOdontogramaRow('odBotRow', BOT_TEETH);
-  _initOdLegend();
-  _initAnamnesisHighlight();
+const OD_TEETH = {
+  permanente: {
+    top: [18,17,16,15,14,13,12,11, 21,22,23,24,25,26,27,28],
+    bot: [48,47,46,45,44,43,42,41, 31,32,33,34,35,36,37,38],
+  },
+  temporal: {
+    top: [55,54,53,52,51, 61,62,63,64,65],
+    bot: [85,84,83,82,81, 71,72,73,74,75],
+  },
+};
+
+const OD_COLOR = { p:'#E74C3C', r:'#2980B9' };
+
+let _odPrest  = '20';   // prestación seleccionada
+let _odEstado = 'p';    // 'p' a realizar · 'r' realizado
+let _odBorrar = false;  // modo goma
+
+// ── Helpers de anatomía ──
+function odCuadrante(num) { return Math.floor(num / 10); }
+function odEsSuperior(num) { return [1,2,5,6].includes(odCuadrante(num)); }
+// Mesial apunta hacia la línea media: cuadrantes 1,4,5,8 → derecha; 2,3,6,7 → izquierda
+function odMesialDerecha(num) { return [1,4,5,8].includes(odCuadrante(num)); }
+function odEsAnterior(num) { return (num % 10) <= 3; }
+
+function odNombreCara(num, cara) {
+  if (cara === 'v') return 'Vestibular';
+  if (cara === 'p') return odEsSuperior(num) ? 'Palatina' : 'Lingual';
+  if (cara === 'm') return 'Mesial';
+  if (cara === 'd') return 'Distal';
+  if (cara === 'o') return odEsAnterior(num) ? 'Incisal' : 'Oclusal';
+  return cara;
+}
+function odLetraCara(num, cara) {
+  if (cara === 'p') return odEsSuperior(num) ? 'P' : 'L';
+  if (cara === 'o') return odEsAnterior(num) ? 'I' : 'O';
+  return cara.toUpperCase();
 }
 
-function _initOdLegend() {
-  document.querySelectorAll('.odontograma-legend__item').forEach(item => {
-    // Quitamos listener viejo clonando el nodo
-    const fresh = item.cloneNode(true);
-    item.parentNode.replaceChild(fresh, item);
-    fresh.classList.add('od-pick--' + fresh.dataset.pick);
-    if (fresh.dataset.pick === _odPickState) fresh.classList.add('od-legend--active');
-    fresh.addEventListener('click', () => {
-      document.querySelectorAll('.odontograma-legend__item').forEach(i => i.classList.remove('od-legend--active'));
-      fresh.classList.add('od-legend--active');
-      _odPickState = fresh.dataset.pick;
-    });
-  });
+// ── Migración / normalización ──
+function odNormalizar(data) {
+  const out = { _tipo: (data && data._tipo) || 'permanente' };
+  if (!data) return out;
+  for (const [k, v] of Object.entries(data)) {
+    if (k.startsWith('_')) continue;
+    if (typeof v === 'string') {
+      // Formato viejo: "17": "caries"
+      const cod = OD_LEGACY[v];
+      if (!cod) continue;                       // 'sano' o desconocido → sin marca
+      const prest = OD_PREST_BY_COD[cod];
+      // Diagnósticos quedan como "a realizar"; tratamientos como "realizado"
+      const e = (cod === '20' || cod === '02') ? 'p' : 'r';
+      if (prest.ambito === 'pieza') out[k] = { pieza:{ t:cod, e } };
+      else                         out[k] = { caras:{ o:{ t:cod, e } } };
+    } else if (v && typeof v === 'object') {
+      out[k] = v;                               // formato nuevo, tal cual
+    }
+  }
+  return out;
+}
+
+function initOdontograma(data) {
+  State._odontograma = odNormalizar(data);
+  _odBorrar = false;
+  _initOdToolbar();
+  renderOdontograma();
+  _initAnamnesisHighlight();
 }
 
 function _initAnamnesisHighlight() {
@@ -913,34 +991,250 @@ function _initAnamnesisHighlight() {
   });
 }
 
-function renderOdontogramaRow(containerId, teeth) {
-  const el = document.getElementById(containerId);
-  if (!el) return;
-  const midIdx = 8;
-  el.innerHTML = teeth.map((num, i) => {
-    const estado = State._odontograma[num] || 'sano';
-    const sep = i === midIdx ? '<div class="od-separator" style="height:56px"></div>' : '';
-    const label = TOOTH_LABELS[estado] || estado;
-    return `${sep}<div class="od-tooth" data-tooth="${num}" data-estado="${estado}" data-label="${label}" onclick="cycleToothState(${num})">
-      <span class="od-tooth__icon">${TOOTH_ICONS[estado]||'🦷'}</span>
-      <span class="od-tooth__num">${num}</span>
-    </div>`;
-  }).join('');
+function _initOdToolbar() {
+  const sel = document.getElementById('odPrestacion');
+  if (sel && !sel.dataset.ready) {
+    const grupo = (titulo, arr) =>
+      `<optgroup label="${titulo}">` +
+      arr.map(p => `<option value="${p.cod}">${p.cod} · ${p.nom}</option>`).join('') +
+      `</optgroup>`;
+    sel.innerHTML =
+      grupo('Por cara del diente', OD_PRESTACIONES.filter(p => p.ambito === 'cara')) +
+      grupo('Pieza completa',      OD_PRESTACIONES.filter(p => p.ambito === 'pieza'));
+    sel.dataset.ready = '1';
+    sel.addEventListener('change', () => { _odPrest = sel.value; _odBorrar = false; _syncOdToolbar(); });
+  }
+  if (sel) sel.value = _odPrest;
+
+  const tipo = document.getElementById('odTipo');
+  if (tipo && !tipo.dataset.ready) {
+    tipo.dataset.ready = '1';
+    tipo.addEventListener('change', () => {
+      State._odontograma._tipo = tipo.value;
+      renderOdontograma();
+    });
+  }
+  if (tipo) tipo.value = State._odontograma._tipo || 'permanente';
+
+  const tog = document.getElementById('odEstadoToggle');
+  if (tog && !tog.dataset.ready) {
+    tog.dataset.ready = '1';
+    tog.addEventListener('click', e => {
+      const b = e.target.closest('button[data-estado]');
+      if (!b) return;
+      _odEstado = b.dataset.estado;
+      _odBorrar = false;
+      _syncOdToolbar();
+    });
+  }
+
+  const borrar = document.getElementById('odBorrarBtn');
+  if (borrar && !borrar.dataset.ready) {
+    borrar.dataset.ready = '1';
+    borrar.addEventListener('click', () => { _odBorrar = !_odBorrar; _syncOdToolbar(); });
+  }
+  _syncOdToolbar();
 }
 
-window.cycleToothState = function(num) {
-  // Aplica el estado seleccionado en la leyenda directamente
-  const next = _odPickState;
-  State._odontograma[num] = next;
-  const el = document.querySelector(`.od-tooth[data-tooth="${num}"]`);
-  if (el) {
-    el.dataset.estado = next;
-    el.dataset.label  = TOOTH_LABELS[next] || next;
-    el.querySelector('.od-tooth__icon').textContent = TOOTH_ICONS[next] || '🦷';
-    // Micro animación
-    el.animate([{transform:'scale(1.2)'},{transform:'scale(1)'}], {duration:180, easing:'ease-out'});
+function _syncOdToolbar() {
+  document.querySelectorAll('#odEstadoToggle button').forEach(b =>
+    b.classList.toggle('active', !_odBorrar && b.dataset.estado === _odEstado));
+  document.getElementById('odBorrarBtn')?.classList.toggle('active', _odBorrar);
+  const hint = document.getElementById('odHint');
+  if (hint) {
+    if (_odBorrar) {
+      hint.textContent = '🧽 Modo borrar: hacé clic en una marca para eliminarla.';
+    } else {
+      const p = OD_PREST_BY_COD[_odPrest];
+      hint.textContent = p?.ambito === 'cara'
+        ? `Hacé clic en la cara del diente donde va "${p.nom}".`
+        : `Hacé clic en cualquier parte del diente para marcar "${p?.nom}".`;
+    }
   }
+  document.getElementById('odontogramaContainer')?.classList.toggle('od-modo-borrar', _odBorrar);
+}
+
+// ── Render ──
+function renderOdontograma() {
+  const tipo = State._odontograma._tipo || 'permanente';
+  const set  = OD_TEETH[tipo] || OD_TEETH.permanente;
+  _renderOdRow('odTopRow', set.top);
+  _renderOdRow('odBotRow', set.bot);
+  _renderOdResumen();
+}
+
+function _renderOdRow(containerId, teeth) {
+  const el = document.getElementById(containerId);
+  if (!el) return;
+  const mid = teeth.length / 2;
+  el.innerHTML = teeth.map((num, i) =>
+    (i === mid ? '<div class="od-separator" style="min-height:64px"></div>' : '') +
+    `<div class="od-tooth" data-tooth="${num}" title="${_odTitulo(num)}">
+       ${_odToothSvg(num)}
+       <span class="od-tooth__num">${num}</span>
+     </div>`
+  ).join('');
+  el.querySelectorAll('.od-zona').forEach(z => {
+    z.addEventListener('click', ev => {
+      ev.stopPropagation();
+      odAplicar(Number(z.dataset.tooth), z.dataset.cara);
+    });
+  });
+}
+
+function _odToothSvg(num) {
+  const d     = State._odontograma[num] || {};
+  const caras = d.caras || {};
+  const pieza = d.pieza;
+  const mesialDer = odMesialDerecha(num);
+  const izq = mesialDer ? 'd' : 'm';
+  const der = mesialDer ? 'm' : 'd';
+
+  const poly = {
+    v:   '3,3 37,3 26,14 14,14',
+    p:   '3,37 37,37 26,26 14,26',
+    [izq]: '3,3 3,37 14,26 14,14',
+    [der]: '37,3 37,37 26,26 26,14',
+    o:   '14,14 26,14 26,26 14,26',
+  };
+
+  const zona = (cara) => {
+    const m = caras[cara];
+    const fill = m ? OD_COLOR[m.e] || OD_COLOR.p : '#fff';
+    return `<polygon class="od-zona" points="${poly[cara]}" fill="${fill}"
+              data-tooth="${num}" data-cara="${cara}"><title>${odNombreCara(num,cara)}</title></polygon>`;
+  };
+
+  const zonas = ['v','p','m','d','o'].map(zona).join('');
+  const overlay = pieza ? _odSimbolo(pieza) : '';
+
+  return `<svg class="od-svg" viewBox="0 0 40 40" aria-label="Diente ${num}">${zonas}${overlay}</svg>`;
+}
+
+function _odSimbolo(pieza) {
+  const p = OD_PREST_BY_COD[pieza.t];
+  const c = OD_COLOR[pieza.e] || OD_COLOR.p;
+  const s = p?.simbolo || 'circulo';
+  const L = (x1,y1,x2,y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/>`;
+  switch (s) {
+    case 'ausente':  return `<rect x="3" y="3" width="34" height="34" fill="#D5D8DC" opacity=".85"/>${L(6,6,34,34)}${L(34,6,6,34)}`;
+    case 'x':        return L(6,6,34,34) + L(34,6,6,34);
+    case 'relleno':  return `<rect x="3" y="3" width="34" height="34" fill="${c}" opacity=".55"/>`;
+    case 'circulo':  return `<circle cx="20" cy="20" r="16" fill="none" stroke="${c}" stroke-width="2.8"/>`;
+    case 'tornillo': return L(20,5,20,35) + L(13,11,27,11) + L(13,18,27,18) + L(13,25,27,25);
+    case 'linea':    return L(20,4,20,36);
+    case 'perno':    return L(20,4,20,36) + `<circle cx="20" cy="12" r="5" fill="${c}"/>`;
+    case 'corchete': return `<path d="M9 5 L4 5 L4 35 L9 35" fill="none" stroke="${c}" stroke-width="2.6"/><path d="M31 5 L36 5 L36 35 L31 35" fill="none" stroke="${c}" stroke-width="2.6"/>`;
+    case 'flecha':   return L(20,34,20,8) + `<path d="M13 15 L20 6 L27 15" fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/>`;
+    case 'mas':      return L(20,7,20,33) + L(7,20,33,20);
+    case 'rayo':     return `<path d="M24 4 L13 21 L21 21 L16 36 L28 18 L20 18 Z" fill="${c}" opacity=".8"/>`;
+    case 'onda':     return `<path d="M5 20 q7 -9 14 0 q7 9 14 0" fill="none" stroke="${c}" stroke-width="2.6"/>`;
+    default:         return `<circle cx="20" cy="20" r="16" fill="none" stroke="${c}" stroke-width="2.8"/>`;
+  }
+}
+
+function _odTitulo(num) {
+  const items = _odItemsDiente(num);
+  return items.length
+    ? `Pieza ${num}\n` + items.map(i => `· ${i.texto}`).join('\n')
+    : `Pieza ${num} — sin prestaciones`;
+}
+
+function _odItemsDiente(num) {
+  const d = State._odontograma[num];
+  if (!d) return [];
+  const out = [];
+  if (d.pieza) {
+    const p = OD_PREST_BY_COD[d.pieza.t];
+    out.push({ cara:null, estado:d.pieza.e,
+      texto:`${p?.nom || d.pieza.t} — ${d.pieza.e === 'r' ? 'realizado' : 'a realizar'}` });
+  }
+  for (const [cara, m] of Object.entries(d.caras || {})) {
+    const p = OD_PREST_BY_COD[m.t];
+    out.push({ cara, estado:m.e,
+      texto:`${p?.nom || m.t} en ${odNombreCara(num, cara)} — ${m.e === 'r' ? 'realizado' : 'a realizar'}` });
+  }
+  return out;
+}
+
+function _renderOdResumen() {
+  const cont = document.getElementById('odResumen');
+  if (!cont) return;
+  const tipo = State._odontograma._tipo || 'permanente';
+  const set  = OD_TEETH[tipo] || OD_TEETH.permanente;
+  const orden = [...set.top, ...set.bot];
+  const filas = [];
+  for (const num of orden) {
+    for (const it of _odItemsDiente(num)) {
+      filas.push(`<div class="od-res-item">
+        <span class="od-res-pieza">${num}</span>
+        <span class="od-res-dot od-res-dot--${it.estado}"></span>
+        <span class="od-res-txt">${escHtml(it.texto)}</span>
+        <button type="button" class="od-res-del" title="Quitar"
+          onclick="odQuitar(${num}, ${it.cara ? `'${it.cara}'` : 'null'})">✕</button>
+      </div>`);
+    }
+  }
+  const count = document.getElementById('odResumenCount');
+  if (count) count.textContent = filas.length;
+  cont.innerHTML = filas.length
+    ? filas.join('')
+    : '<p class="od-res-empty">Todavía no cargaste prestaciones en este odontograma.</p>';
+}
+
+// ── Acciones ──
+function odAplicar(num, cara) {
+  const d = State._odontograma;
+  if (_odBorrar) {
+    // Borra lo que esté visible en esa zona: primero la cara, si no la pieza
+    if (d[num]?.caras?.[cara]) delete d[num].caras[cara];
+    else if (d[num]?.pieza)    delete d[num].pieza;
+    _odLimpiarVacio(num);
+  } else {
+    const p = OD_PREST_BY_COD[_odPrest];
+    if (!p) return;
+    d[num] = d[num] || {};
+    if (p.ambito === 'pieza') {
+      d[num].pieza = { t:_odPrest, e:_odEstado };
+    } else {
+      d[num].caras = d[num].caras || {};
+      d[num].caras[cara] = { t:_odPrest, e:_odEstado };
+    }
+  }
+  _odRefrescarDiente(num);
+  _renderOdResumen();
+}
+
+window.odQuitar = function(num, cara) {
+  const d = State._odontograma;
+  if (!d[num]) return;
+  if (cara) { if (d[num].caras) delete d[num].caras[cara]; }
+  else      { delete d[num].pieza; }
+  _odLimpiarVacio(num);
+  _odRefrescarDiente(num);
+  _renderOdResumen();
 };
+
+function _odLimpiarVacio(num) {
+  const t = State._odontograma[num];
+  if (!t) return;
+  if (t.caras && Object.keys(t.caras).length === 0) delete t.caras;
+  if (!t.pieza && !t.caras) delete State._odontograma[num];
+}
+
+function _odRefrescarDiente(num) {
+  const el = document.querySelector(`.od-tooth[data-tooth="${num}"]`);
+  if (!el) return;
+  el.title = _odTitulo(num);
+  el.querySelector('.od-svg')?.remove();
+  el.insertAdjacentHTML('afterbegin', _odToothSvg(num));
+  el.querySelectorAll('.od-zona').forEach(z => {
+    z.addEventListener('click', ev => {
+      ev.stopPropagation();
+      odAplicar(Number(z.dataset.tooth), z.dataset.cara);
+    });
+  });
+}
 
 /* ══════════════════════════════════════════════════
    NUEVO TURNO MANUAL

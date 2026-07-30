@@ -494,36 +494,62 @@
       <div class="ficha-section" data-tab-panel="odontograma">
         <div class="ficha-section__title">🦷 Odontograma</div>
         <div class="odontograma-wrap">
-          <div class="odontograma-legend">
-            <div class="odontograma-legend__item" data-pick="sano"><span class="od-dot od-dot--sano"></span>Sano</div>
-            <div class="odontograma-legend__item" data-pick="caries"><span class="od-dot od-dot--caries"></span>Caries</div>
-            <div class="odontograma-legend__item" data-pick="extraccion"><span class="od-dot od-dot--extraccion"></span>Extracción</div>
-            <div class="odontograma-legend__item" data-pick="obturacion"><span class="od-dot od-dot--obturacion"></span>Obturación</div>
-            <div class="odontograma-legend__item" data-pick="corona"><span class="od-dot od-dot--corona"></span>Corona</div>
-            <div class="odontograma-legend__item" data-pick="implante"><span class="od-dot od-dot--implante"></span>Implante</div>
-            <div class="odontograma-legend__item" data-pick="ausente"><span class="od-dot od-dot--ausente"></span>Ausente</div>
-          </div>
-          <div class="odontograma-container" id="odontogramaContainer">
-            <!-- Superior derecha (18-11) + Superior izquierda (21-28) -->
-            <div class="od-arch od-arch--top">
-              <div class="od-row od-row--nums">
-                <span>18</span><span>17</span><span>16</span><span>15</span><span>14</span><span>13</span><span>12</span><span>11</span>
-                <div class="od-separator"></div>
-                <span>21</span><span>22</span><span>23</span><span>24</span><span>25</span><span>26</span><span>27</span><span>28</span>
+
+          <!-- Barra de herramientas -->
+          <div class="od-toolbar">
+            <div class="od-tool">
+              <label>Tipo de odontograma</label>
+              <select id="odTipo">
+                <option value="permanente">Permanente (adulto)</option>
+                <option value="temporal">Temporal (niños)</option>
+              </select>
+            </div>
+            <div class="od-tool od-tool--grow">
+              <label>Prestación</label>
+              <select id="odPrestacion"></select>
+            </div>
+            <div class="od-tool">
+              <label>Estado</label>
+              <div class="od-estado-toggle" id="odEstadoToggle">
+                <button type="button" data-estado="p" class="active">A realizar</button>
+                <button type="button" data-estado="r">Realizado</button>
               </div>
+            </div>
+            <div class="od-tool">
+              <label>&nbsp;</label>
+              <button type="button" class="od-btn-borrar" id="odBorrarBtn">🧽 Borrar</button>
+            </div>
+          </div>
+
+          <p class="od-hint" id="odHint"></p>
+
+          <!-- Arcadas -->
+          <div class="odontograma-container" id="odontogramaContainer">
+            <div class="od-arch od-arch--top">
               <div class="od-row od-row--teeth" id="odTopRow"></div>
             </div>
-            <!-- Inferior izquierda (48-41) + Inferior derecha (31-38) -->
             <div class="od-arch od-arch--bottom">
               <div class="od-row od-row--teeth" id="odBotRow"></div>
-              <div class="od-row od-row--nums">
-                <span>48</span><span>47</span><span>46</span><span>45</span><span>44</span><span>43</span><span>42</span><span>41</span>
-                <div class="od-separator"></div>
-                <span>31</span><span>32</span><span>33</span><span>34</span><span>35</span><span>36</span><span>37</span><span>38</span>
-              </div>
             </div>
           </div>
-          <p style="font-size:11px;color:var(--adm-muted);margin-top:8px;text-align:center">Hacé clic en un diente para cambiar su estado</p>
+
+          <!-- Referencia de colores y caras -->
+          <div class="od-refs">
+            <span><span class="od-ref-box od-ref-box--p"></span>A realizar</span>
+            <span><span class="od-ref-box od-ref-box--r"></span>Realizado</span>
+            <span class="od-refs__sep"></span>
+            <span>Caras: <strong>V</strong> vestibular · <strong>M</strong> mesial · <strong>D</strong> distal · <strong>P/L</strong> palatina/lingual · <strong>O/I</strong> oclusal/incisal</span>
+          </div>
+
+          <!-- Detalle cargado -->
+          <div class="od-resumen-wrap">
+            <div class="od-resumen-head">
+              <strong>Prestaciones cargadas</strong>
+              <span id="odResumenCount" class="od-resumen-count">0</span>
+            </div>
+            <div id="odResumen" class="od-resumen"></div>
+          </div>
+
         </div>
       </div>
 
