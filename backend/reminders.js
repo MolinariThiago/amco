@@ -84,6 +84,7 @@ async function enviarEmail(turno, esMismoDia) {
         <p style="font-size:13px;color:#6C6C73;margin:0">Si no pod&eacute;s asistir, avisanos al <a href="tel:+543454216043" style="color:#A87C42">(0345)&nbsp;421&nbsp;6043</a> o por <a href="https://wa.me/5493455287370" style="color:#A87C42">WhatsApp</a>.</p>
       </div>
       <div style="background:#F4F4F7;padding:14px;text-align:center;font-size:11px;color:#A0A0A8">
+        <p style="margin:0 0 6px">Este es un mensaje autom&aacute;tico — por favor no respondas a este email. Para contactarnos, llamanos o escribinos por WhatsApp.</p>
         AMCO &middot; Centro Odontol&oacute;gico &middot; Concordia, Entre R&iacute;os
       </div>
     </div>`;
