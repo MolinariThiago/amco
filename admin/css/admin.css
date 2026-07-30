@@ -371,7 +371,7 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
 .ficha-tab{display:flex;align-items:center;gap:6px;padding:12px 14px;border:none;background:transparent;font-size:13px;font-weight:500;color:var(--adm-muted);cursor:pointer;white-space:nowrap;border-bottom:2px solid transparent;transition:color .15s,border-color .15s;font-family:var(--font-sans)}
 .ficha-tab:hover{color:var(--adm-text)}
 .ficha-tab.active{color:var(--adm-text);font-weight:600;border-bottom-color:var(--adm-gold)}
-.ficha-section[data-tab-panel]{display:none}
+.ficha-section[data-tab-panel]{display:none;max-width:100%;overflow:hidden}
 .ficha-section[data-tab-panel].active{display:block}
 .ficha-section{border:1px solid var(--adm-border);border-radius:var(--radius-lg);padding:20px;margin-bottom:16px;background:var(--adm-surface-2);box-shadow:0 1px 4px rgba(0,0,0,.04)}
 .ficha-section__title{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--adm-text-2);margin-bottom:16px;padding-bottom:11px;border-bottom:2px solid var(--adm-border)}
@@ -379,7 +379,25 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
 .ficha-grid--2{grid-template-columns:1fr 1fr}
 .ficha-grid--3{grid-template-columns:1fr 1fr 1fr}
 .ficha-col--full{grid-column:1/-1}
-@media(max-width:560px){.ficha-grid--2,.ficha-grid--3{grid-template-columns:1fr}}
+/* ── Responsive de la ficha clínica ──
+   Orden importante: de mayor a menor ancho, misma especificidad,
+   así la regla más chica gana cuando ambas aplican. */
+@media(max-width:900px){
+  #pacienteModal .ficha-grid--3{grid-template-columns:1fr 1fr}
+}
+@media(max-width:640px){
+  .ficha-tabs{top:57px;padding:0 10px}
+  .ficha-tab{padding:11px 9px;font-size:12px;gap:4px}
+  #pacienteModal .modal__header{padding:14px 16px}
+  #pacienteModal .modal__body{padding:16px 14px}
+  #pacienteModal .ficha-section{padding:14px 12px}
+  #pacienteModal .modal__footer{flex-direction:column;gap:8px;padding:12px 14px}
+  #pacienteModal .modal__footer .modal-btn{width:100%}
+}
+@media(max-width:560px){
+  #pacienteModal .ficha-grid--2,
+  #pacienteModal .ficha-grid--3{grid-template-columns:1fr}
+}
 
 /* ═══ ODONTOGRAMA ═══ */
 .odontograma-wrap{width:100%}
@@ -405,11 +423,13 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
 .od-hint{font-size:11.5px;color:var(--adm-muted);margin:0 0 12px;min-height:16px}
 
 /* Contenedor principal */
-.odontograma-container{display:flex;flex-direction:column;gap:10px;background:var(--adm-white);border:1.5px solid var(--adm-border);border-radius:12px;padding:18px 12px;overflow-x:auto;box-shadow:inset 0 1px 4px rgba(0,0,0,.03)}
-.od-arch{display:flex;flex-direction:column;gap:6px}
+.odontograma-wrap{max-width:100%;min-width:0}
+.odontograma-container{display:flex;flex-direction:column;gap:10px;background:var(--adm-white);border:1.5px solid var(--adm-border);border-radius:12px;padding:18px 12px;overflow-x:auto;min-width:0;box-shadow:inset 0 1px 4px rgba(0,0,0,.03)}
+.od-arch{display:flex;flex-direction:column;gap:6px;min-width:0}
 .od-arch--top{padding-bottom:12px;border-bottom:1px dashed var(--adm-border)}
 .od-arch--bottom{padding-top:12px}
-.od-row{display:flex;align-items:center;justify-content:center;gap:4px}
+/* width:max-content + min-width:100% → centrado si sobra espacio, scroll si falta */
+.od-row{display:flex;align-items:center;justify-content:center;gap:4px;width:max-content;min-width:100%}
 .od-separator{width:1px;background:var(--adm-border-2);margin:0 8px;align-self:stretch;min-height:16px}
 
 /* Diente */
@@ -444,9 +464,22 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
 .od-res-del:hover{background:#FEF2F2;color:var(--adm-red)}
 .od-res-empty{padding:16px 14px;font-size:12px;color:var(--adm-muted);text-align:center;margin:0}
 
+/* Tablet / notebook chica: reducir el diente para que la arcada entre entera */
+@media(min-width:561px) and (max-width:1000px){
+  .od-svg{width:34px;height:34px}
+  .od-row{gap:2px}
+  .od-separator{margin:0 5px}
+}
+/* Celular: la arcada scrollea en horizontal (no hay forma de que 16 piezas
+   sean legibles en 375px). El resto del panel queda contenido. */
 @media(max-width:560px){
   .od-tool,.od-tool--grow{min-width:100%}
-  .od-svg{width:36px;height:36px}
+  .od-svg{width:34px;height:34px}
+  .od-row{gap:2px}
+  .odontograma-container{padding:14px 8px}
+  .od-res-item{font-size:12px;padding:7px 10px;gap:7px}
+  .od-resumen-head{padding:8px 10px}
+  #trabajosTable{min-width:520px}
 }
 
 /* ═══ ANAMNESIS ═══ */
