@@ -42,22 +42,24 @@
     },
     {
       titulo: 'Pacientes y ficha clínica',
-      texto: 'Acá vive la historia clínica completa: datos personales, anamnesis, odontograma, plan de tratamiento y cuenta corriente. La columna «Saldo» te muestra de un vistazo quién debe plata, y el filtro «Solo con saldo pendiente» lista todos los deudores.',
+      texto: 'La historia clínica completa de todos los pacientes de la clínica: datos personales, anamnesis, odontograma y plan de tratamiento. Buscá por nombre, DNI o teléfono y abrí la ficha para consultarla o completarla.',
       target: '.sidebar__link[data-section="pacientes"]',
       seccion: 'pacientes',
-      soloAdmin: true,
     },
     {
       titulo: 'El odontograma',
       texto: 'Dentro de la ficha de cada paciente: elegí una prestación (caries, corona, implante…), marcá si está «a realizar» (rojo) o «realizada» (azul), y hacé clic en el diente — o en la cara exacta del diente. Hay odontograma de adultos y de niños.',
       target: '.sidebar__link[data-section="pacientes"]',
-      soloAdmin: true,
+    },
+    {
+      titulo: 'Cuenta corriente y deudores',
+      texto: 'La columna «Saldo» muestra de un vistazo quién debe plata, el filtro «Solo con saldo pendiente» lista los deudores, y dentro de cada ficha la pestaña «Trabajos» lleva la cuenta corriente con totales automáticos.',
+      target: '.sidebar__link[data-section="pacientes"]',
     },
     {
       titulo: 'Presupuestos automáticos',
       texto: 'En la pestaña «Plan» de la ficha, el botón «🧾 Generar presupuesto» arma un documento con todo lo marcado «a realizar» en el odontograma, con los precios del catálogo y el total. Listo para imprimir o guardar en el plan.',
       target: '.sidebar__link[data-section="pacientes"]',
-      soloAdmin: true,
     },
     {
       titulo: 'Prestaciones y precios',

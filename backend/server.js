@@ -590,7 +590,9 @@ app.get('/api/pacientes/hoy', auth, async (req, res) => {
   }
 });
 
-app.get('/api/pacientes', auth, adminOnly, async (req, res) => {
+// Lectura de pacientes: cualquier usuario logueado (los doctores
+// necesitan consultar historias clínicas de todos los pacientes).
+app.get('/api/pacientes', auth, async (req, res) => {
   try {
     const result = await pool.query(`SELECT * FROM pacientes ORDER BY id DESC`);
     res.json({ ok: true, data: result.rows.map(mapPaciente) });
@@ -634,7 +636,10 @@ app.post('/api/pacientes', auth, adminOnly, async (req, res) => {
   }
 });
 
-app.patch('/api/pacientes/:id', auth, adminOnly, async (req, res) => {
+// Edición de fichas: cualquier usuario logueado — las doctoras completan
+// odontograma, anamnesis y plan después de atender. Eliminar sigue
+// siendo exclusivo del admin.
+app.patch('/api/pacientes/:id', auth, async (req, res) => {
   try {
     const id = Number(req.params.id);
     const check = await pool.query(`SELECT id FROM pacientes WHERE id = $1`, [id]);

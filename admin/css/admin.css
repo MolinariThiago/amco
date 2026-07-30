@@ -476,6 +476,12 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
   #trabajosTable{min-width:520px}
 }
 
+/* ═══ VISTA POR ROL ═══
+   Los doctores acceden a toda la información clínica Y financiera de
+   los pacientes (fichas, cuenta corriente, presupuestos). Reservado al
+   admin: crear/eliminar pacientes, catálogo de precios, usuarios. */
+body.role-doctor #nuevoPacienteBtn{display:none}
+
 /* ═══ TOUR GUIADO ═══ */
 #tourOverlay{display:none;position:fixed;inset:0;z-index:900}
 .tour-backdrop{position:absolute;inset:0;background:rgba(14,14,19,.55)}

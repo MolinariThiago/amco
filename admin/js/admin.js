@@ -117,6 +117,7 @@ function initPanel() {
   if (roleEl)  roleEl.textContent  = State.role === 'admin' ? 'Administrador' : 'Doctor';
   if (avatar)  avatar.textContent  = (displayName||'A')[0].toUpperCase();
   const isDoctor = State.role === 'doctor';
+  document.body.classList.toggle('role-doctor', isDoctor);
   document.querySelectorAll('[data-admin-only]').forEach(el => { el.style.display = isDoctor ? 'none' : ''; });
   initSidebar(); initSidebarMobile();
   navigateTo(isDoctor ? 'turnos' : 'dashboard');
@@ -896,7 +897,7 @@ async function loadPacientes(query = '') {
         <td style="font-size:13px">${escHtml(p.dni||'—')}</td>
         <td style="font-size:13px">${escHtml(p.telefono||'—')}</td>
         <td style="font-size:13px">${p.fechaNacimiento ? fmtFecha(p.fechaNacimiento) : '—'}</td>
-        <td style="text-align:right;white-space:nowrap">${saldoCeldaHtml(p.trabajos)}</td>
+        <td class="col-saldo" style="text-align:right;white-space:nowrap">${saldoCeldaHtml(p.trabajos)}</td>
         <td style="font-size:12px;color:var(--adm-muted)">${fmtDatetime(p.createdAt)}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="action-btn" onclick="openPacienteModal(${p.id})">
@@ -1028,7 +1029,8 @@ window.openPacienteModal = function(id) {
 
   initOdontograma(p?.odontograma || {});
 
-  document.getElementById('pmDeleteBtn').style.display = id ? 'inline-flex' : 'none';
+  // Eliminar paciente: solo el admin
+  document.getElementById('pmDeleteBtn').style.display = (id && State.role !== 'doctor') ? 'inline-flex' : 'none';
   setFichaTab('datos');
   document.getElementById('pacienteModal').style.display = 'flex';
   document.body.style.overflow = 'hidden';
