@@ -668,6 +668,29 @@ app.delete('/api/users/:username', auth, adminOnly, async (req, res) => {
   }
 });
 
+// ── Auto-completar turnos pasados ─────────────────
+// Un turno confirmado cuya fecha/hora ya pasó (con 1 h de gracia)
+// se marca automáticamente como completado. Los pendientes y
+// cancelados no se tocan.
+async function autoCompletarTurnos() {
+  try {
+    // Hora de Argentina (UTC-3) menos 60 minutos de gracia
+    const d = new Date(Date.now() - 3 * 3600 * 1000 - 60 * 60 * 1000);
+    const fecha = d.toISOString().slice(0, 10);  // YYYY-MM-DD
+    const hora  = d.toISOString().slice(11, 16); // HH:MM
+    const r = await pool.query(
+      `UPDATE turnos SET estado = 'completado'
+       WHERE deleted_at IS NULL AND estado = 'confirmado'
+         AND (fecha < $1 OR (fecha = $1 AND hora <= $2))
+       RETURNING id`,
+      [fecha, hora]
+    );
+    if (r.rows.length > 0) console.log(`✅ ${r.rows.length} turno(s) pasados marcados como completados`);
+  } catch (err) {
+    console.error('autoCompletarTurnos error:', err.message);
+  }
+}
+
 // ── Rutas HTML ────────────────────────────────────
 app.get('/admin*', (req, res) => res.sendFile(path.resolve(__dirname, '../admin/index.html')));
 app.get('/', (req, res) => res.sendFile(path.resolve(__dirname, '../index.html')));
@@ -681,6 +704,8 @@ async function start() {
   try {
     await initDB();
     initReminders(pool).catch(err => console.error('Reminders init error:', err.message));
+    autoCompletarTurnos();                                    // primera pasada al arrancar
+    setInterval(autoCompletarTurnos, 30 * 60 * 1000);         // luego cada 30 minutos
     app.listen(PORT, () => {
       console.log(`\n🦷  AMCO -> http://localhost:${PORT}`);
       console.log(`🔒  Admin -> http://localhost:${PORT}/admin\n`);
