@@ -9,6 +9,7 @@ const path       = require('path');
 const jwt        = require('jsonwebtoken');
 const crypto     = require('crypto');
 const { Pool }   = require('pg');
+const { initReminders } = require('./reminders');
 
 const app  = express();
 const PORT = process.env.PORT || 3001;
@@ -673,6 +674,7 @@ app.get('*', (req, res, next) => {
 async function start() {
   try {
     await initDB();
+    initReminders(pool).catch(err => console.error('Reminders init error:', err.message));
     app.listen(PORT, () => {
       console.log(`\n🦷  AMCO -> http://localhost:${PORT}`);
       console.log(`🔒  Admin -> http://localhost:${PORT}/admin\n`);
