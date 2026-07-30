@@ -482,6 +482,30 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
   #trabajosTable{min-width:520px}
 }
 
+/* ═══ CUENTA CORRIENTE / TRABAJOS ═══ */
+.trab-tot-row{background:var(--adm-surface-2)}
+.trab-bottom{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:10px;margin-top:10px}
+.trab-add-btn{padding:6px 14px;border:1px dashed var(--adm-border);border-radius:6px;background:transparent;color:var(--adm-muted);cursor:pointer;font-size:13px;transition:border-color .15s,color .15s}
+.trab-add-btn:hover{border-color:var(--adm-gold);color:var(--adm-gold-dark)}
+.trab-chip{display:inline-flex;align-items:center;gap:6px;font-size:12.5px;font-weight:600;padding:6px 13px;border-radius:20px}
+.trab-chip--debe{background:#FDE8E8;color:#C0392B}
+.trab-chip--favor{background:#D5F5E3;color:#1E8449}
+.trab-chip--ok{background:var(--adm-bg);color:var(--adm-muted)}
+
+/* Saldo en la lista de pacientes */
+.saldo-tag{display:inline-block;font-size:12px;font-weight:600;padding:3px 9px;border-radius:6px;white-space:nowrap}
+.saldo-tag--debe{background:#FDE8E8;color:#C0392B}
+.saldo-tag--favor{background:#D5F5E3;color:#1E8449}
+.deudores-check{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--adm-text-2);cursor:pointer;user-select:none;white-space:nowrap}
+.deudores-check input{cursor:pointer;accent-color:var(--adm-gold)}
+.deuda-total{font-size:12.5px;color:var(--adm-muted);white-space:nowrap}
+.deuda-total strong{color:var(--adm-red)}
+
+/* Plan: botón para importar del odontograma */
+.plan-label-row{display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:8px;margin-bottom:5px}
+.plan-import-btn{padding:5px 12px;border:1px solid var(--adm-border);border-radius:6px;background:var(--adm-white);color:var(--adm-text-2);font-size:11.5px;font-weight:600;cursor:pointer;transition:all .15s;white-space:nowrap}
+.plan-import-btn:hover{border-color:var(--adm-gold);color:var(--adm-gold-dark);background:var(--adm-gold-dim2)}
+
 /* ═══ ANAMNESIS ═══ */
 .anamnesis-checks{display:flex;flex-direction:column;gap:7px}
 .anam-row{display:flex;align-items:center;flex-wrap:wrap;gap:8px;padding:9px 14px;background:var(--adm-white);border-radius:var(--radius);border:1px solid var(--adm-border);transition:border-color .15s,background .15s}

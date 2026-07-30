@@ -573,7 +573,7 @@ function badgeHtml(e){const cls=['pendiente','confirmado','completado','cancelad
 
 async function loadPacientes(query = '') {
   const tbody = document.getElementById('pacientesBody');
-  if (tbody) tbody.innerHTML = '<tr><td colspan="7" class="table-loading">Cargando...</td></tr>';
+  if (tbody) tbody.innerHTML = '<tr><td colspan="8" class="table-loading">Cargando...</td></tr>';
   try {
     const data = await API.getPacientes();
     let lista = data.data || [];
@@ -587,9 +587,24 @@ async function loadPacientes(query = '') {
       );
     }
     State.pacientes = lista;
+
+    // Deuda total de la cartera (se calcula sobre todos, no sobre el filtro)
+    const deudaTotal = lista.reduce((acc, p) => { const s = saldoDeTrabajos(p.trabajos); return acc + (s > 0 ? s : 0); }, 0);
+    const conDeuda   = lista.filter(p => saldoDeTrabajos(p.trabajos) > 0).length;
+    const elTot = document.getElementById('pacientesTotalDeuda');
+    if (elTot) {
+      elTot.innerHTML = deudaTotal > 0
+        ? `Por cobrar: <strong>${trabMoneda(deudaTotal)}</strong> · ${conDeuda} paciente(s)`
+        : '';
+    }
+
+    if (document.getElementById('soloDeudores')?.checked) {
+      lista = lista.filter(p => saldoDeTrabajos(p.trabajos) > 0);
+    }
+
     if (!tbody) return;
     if (!lista.length) {
-      tbody.innerHTML = '<tr><td colspan="7" class="table-loading">No hay pacientes registrados.</td></tr>';
+      tbody.innerHTML = '<tr><td colspan="8" class="table-loading">No hay pacientes que coincidan.</td></tr>';
       return;
     }
     tbody.innerHTML = lista.map(p => `
@@ -602,6 +617,7 @@ async function loadPacientes(query = '') {
         <td style="font-size:13px">${escHtml(p.dni||'—')}</td>
         <td style="font-size:13px">${escHtml(p.telefono||'—')}</td>
         <td style="font-size:13px">${p.fechaNacimiento ? fmtFecha(p.fechaNacimiento) : '—'}</td>
+        <td style="text-align:right;white-space:nowrap">${saldoCeldaHtml(p.trabajos)}</td>
         <td style="font-size:12px;color:var(--adm-muted)">${fmtDatetime(p.createdAt)}</td>
         <td style="display:flex;gap:6px;flex-wrap:wrap">
           <button class="action-btn" onclick="openPacienteModal(${p.id})">
@@ -616,6 +632,19 @@ async function loadPacientes(query = '') {
       </tr>`).join('');
   } catch(err) { showToast('Error pacientes: '+err.message, 'error'); }
 }
+
+// Celda de saldo para la lista de pacientes
+function saldoCeldaHtml(trabajos) {
+  const s = saldoDeTrabajos(trabajos);
+  if (!s) return '<span style="font-size:12px;color:var(--adm-subtle)">—</span>';
+  const debe = s > 0;
+  return `<span class="saldo-tag ${debe ? 'saldo-tag--debe' : 'saldo-tag--favor'}"
+    title="${debe ? 'Saldo pendiente de cobro' : 'Saldo a favor del paciente'}">${trabMoneda(Math.abs(s))}</span>`;
+}
+
+document.getElementById('soloDeudores')?.addEventListener('change', () => {
+  loadPacientes(document.getElementById('pacientesSearch').value.trim());
+});
 
 document.getElementById('pacientesSearchBtn')?.addEventListener('click', () => {
   loadPacientes(document.getElementById('pacientesSearch').value.trim());
@@ -1493,6 +1522,25 @@ async function loadHistorialHoy() {
 }
 
 // ── TABLA DE TRABAJOS REALIZADOS ──────────────────────────────────────────
+/* ── Cuenta corriente del paciente (Trabajos realizados) ──
+   El saldo pasó a ser automático (acumulado de debe − haber).
+   El valor que estuviera cargado a mano se conserva en `saldoManual`,
+   así no se pierde ningún dato que ya estuviera escrito. */
+
+function trabNum(v) {
+  const n = parseFloat(String(v ?? '').replace(',', '.'));
+  return isNaN(n) ? 0 : n;
+}
+function trabMoneda(n) {
+  return '$ ' + Number(n).toLocaleString('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
+// Saldo final de una lista de trabajos (usado también en la lista de pacientes)
+function saldoDeTrabajos(trabajos) {
+  if (!Array.isArray(trabajos)) return 0;
+  return trabajos.reduce((acc, t) => acc + trabNum(t.debe) - trabNum(t.haber), 0);
+}
+
 function renderTrabajosTable(trabajos) {
   const tbody = document.getElementById('trabajosBody');
   if (!tbody) return;
@@ -1502,46 +1550,120 @@ function renderTrabajosTable(trabajos) {
   } else {
     trabajos.forEach(t => addTrabajoRow(tbody, t));
   }
+  recalcTrabajos();
 }
 
 function addTrabajoRow(tbody, data) {
   const tr = document.createElement('tr');
+  // Conservamos lo que vino de la base para no perderlo nunca
+  tr.dataset.saldoOrig   = data.saldo ?? '';
+  tr.dataset.saldoManual = data.saldoManual ?? '';
   tr.innerHTML = `
     <td style="border:1px solid var(--adm-border);padding:4px 6px">
       <input type="date" value="${data.fecha||''}" class="trab-fecha" style="border:none;background:transparent;width:130px;color:var(--adm-text);font-size:13px">
     </td>
     <td style="border:1px solid var(--adm-border);padding:4px 6px">
-      <input type="text" value="${data.trabajo||''}" class="trab-trabajo" placeholder="Descripción del trabajo" style="border:none;background:transparent;width:100%;color:var(--adm-text);font-size:13px">
+      <input type="text" value="${escHtml(data.trabajo||'')}" class="trab-trabajo" placeholder="Descripción del trabajo" style="border:none;background:transparent;width:100%;color:var(--adm-text);font-size:13px">
     </td>
     <td style="border:1px solid var(--adm-border);padding:4px 6px">
-      <input type="number" value="${data.debe||''}" class="trab-debe" placeholder="0" step="0.01" style="border:none;background:transparent;width:80px;text-align:right;color:var(--adm-text);font-size:13px">
+      <input type="number" value="${data.debe||''}" class="trab-debe" placeholder="0" step="0.01" style="border:none;background:transparent;width:88px;text-align:right;color:var(--adm-text);font-size:13px">
     </td>
     <td style="border:1px solid var(--adm-border);padding:4px 6px">
-      <input type="number" value="${data.haber||''}" class="trab-haber" placeholder="0" step="0.01" style="border:none;background:transparent;width:80px;text-align:right;color:var(--adm-text);font-size:13px">
+      <input type="number" value="${data.haber||''}" class="trab-haber" placeholder="0" step="0.01" style="border:none;background:transparent;width:88px;text-align:right;color:var(--adm-text);font-size:13px">
     </td>
-    <td style="border:1px solid var(--adm-border);padding:4px 6px">
-      <input type="number" value="${data.saldo||''}" class="trab-saldo" placeholder="0" step="0.01" style="border:none;background:transparent;width:80px;text-align:right;color:var(--adm-text);font-size:13px">
-    </td>
+    <td class="trab-saldo-cell" style="border:1px solid var(--adm-border);padding:4px 10px;text-align:right;font-size:13px;font-weight:600;white-space:nowrap;background:var(--adm-surface-2)">—</td>
     <td style="border:1px solid var(--adm-border);padding:4px 6px;text-align:center">
-      <button type="button" onclick="this.closest('tr').remove()" style="background:none;border:none;color:var(--adm-muted);cursor:pointer;font-size:14px;line-height:1" title="Eliminar fila">✕</button>
+      <button type="button" class="trab-del" style="background:none;border:none;color:var(--adm-muted);cursor:pointer;font-size:14px;line-height:1" title="Eliminar fila">✕</button>
     </td>
   `;
+  tr.querySelector('.trab-del').addEventListener('click', () => { tr.remove(); recalcTrabajos(); });
+  tr.querySelector('.trab-debe').addEventListener('input', recalcTrabajos);
+  tr.querySelector('.trab-haber').addEventListener('input', recalcTrabajos);
   tbody.appendChild(tr);
+}
+
+function recalcTrabajos() {
+  const tbody = document.getElementById('trabajosBody');
+  if (!tbody) return;
+  let acc = 0, totDebe = 0, totHaber = 0;
+  tbody.querySelectorAll('tr').forEach(tr => {
+    const d = trabNum(tr.querySelector('.trab-debe')?.value);
+    const h = trabNum(tr.querySelector('.trab-haber')?.value);
+    totDebe += d; totHaber += h; acc += d - h;
+    const cell = tr.querySelector('.trab-saldo-cell');
+    if (cell) {
+      cell.textContent = (d || h || tr.dataset.saldoOrig) ? trabMoneda(acc) : '—';
+      cell.style.color = acc > 0 ? 'var(--adm-red)' : acc < 0 ? 'var(--adm-sage)' : 'var(--adm-muted)';
+    }
+    tr.dataset.saldoCalc = acc.toFixed(2);
+  });
+  const setTot = (id, val, color) => {
+    const el = document.getElementById(id);
+    if (!el) return;
+    el.textContent = trabMoneda(val);
+    if (color) el.style.color = color;
+  };
+  setTot('trabTotDebe',  totDebe);
+  setTot('trabTotHaber', totHaber);
+  setTot('trabTotSaldo', acc, acc > 0 ? 'var(--adm-red)' : acc < 0 ? 'var(--adm-sage)' : 'var(--adm-text)');
+
+  const res = document.getElementById('trabResumen');
+  if (res) {
+    res.innerHTML = acc > 0
+      ? `<span class="trab-chip trab-chip--debe">El paciente debe ${trabMoneda(acc)}</span>`
+      : acc < 0
+        ? `<span class="trab-chip trab-chip--favor">Saldo a favor del paciente ${trabMoneda(-acc)}</span>`
+        : `<span class="trab-chip trab-chip--ok">Cuenta al día</span>`;
+  }
 }
 
 function getTrabajosData() {
   const tbody = document.getElementById('trabajosBody');
   if (!tbody) return [];
-  return Array.from(tbody.querySelectorAll('tr')).map(tr => ({
-    fecha:   tr.querySelector('.trab-fecha')?.value   || '',
-    trabajo: tr.querySelector('.trab-trabajo')?.value || '',
-    debe:    tr.querySelector('.trab-debe')?.value    || '',
-    haber:   tr.querySelector('.trab-haber')?.value   || '',
-    saldo:   tr.querySelector('.trab-saldo')?.value   || '',
-  }));
+  return Array.from(tbody.querySelectorAll('tr')).map(tr => {
+    const calc = tr.dataset.saldoCalc || '';
+    // Si había un saldo escrito a mano que no coincide con el calculado,
+    // lo guardamos aparte para no perderlo.
+    let manual = tr.dataset.saldoManual || '';
+    const orig = tr.dataset.saldoOrig || '';
+    if (!manual && orig && Math.abs(trabNum(orig) - trabNum(calc)) > 0.009) manual = orig;
+    const fila = {
+      fecha:   tr.querySelector('.trab-fecha')?.value   || '',
+      trabajo: tr.querySelector('.trab-trabajo')?.value || '',
+      debe:    tr.querySelector('.trab-debe')?.value    || '',
+      haber:   tr.querySelector('.trab-haber')?.value   || '',
+      saldo:   calc,
+    };
+    if (manual) fila.saldoManual = manual;
+    return fila;
+  });
 }
 
 document.getElementById('agregarTrabajoBtn')?.addEventListener('click', () => {
   const tbody = document.getElementById('trabajosBody');
-  if (tbody) addTrabajoRow(tbody, { fecha: '', trabajo: '', debe: '', haber: '', saldo: '' });
+  if (tbody) { addTrabajoRow(tbody, { fecha:'', trabajo:'', debe:'', haber:'', saldo:'' }); recalcTrabajos(); }
+});
+
+/* ── Plan: traer las prestaciones pendientes del odontograma ── */
+document.getElementById('planImportBtn')?.addEventListener('click', () => {
+  const od = State._odontograma || {};
+  const tipo = od._tipo || 'permanente';
+  const set = OD_TEETH[tipo] || OD_TEETH.permanente;
+  const lineas = [];
+  for (const num of [...set.top, ...set.bot]) {
+    for (const it of _odItemsDiente(num)) {
+      if (it.estado !== 'p') continue;                 // solo lo que falta hacer
+      lineas.push(`• Pieza ${num} — ${it.texto.replace(' — a realizar', '')}`);
+    }
+  }
+  if (!lineas.length) {
+    return showToast('No hay prestaciones marcadas como «a realizar» en el odontograma', 'default');
+  }
+  const ta = document.getElementById('pmHistorial');
+  const bloque = `Prestaciones pendientes según odontograma (${new Date().toLocaleDateString('es-AR')}):\n` + lineas.join('\n');
+  // Se agrega al final: nunca sobrescribe lo que ya estaba escrito
+  ta.value = ta.value.trim() ? ta.value.replace(/\s*$/, '') + '\n\n' + bloque : bloque;
+  ta.focus();
+  ta.scrollTop = ta.scrollHeight;
+  showToast(`${lineas.length} prestación(es) agregadas al plan`, 'success');
 });

@@ -350,6 +350,10 @@
           <input type="search" class="toolbar-search" id="pacientesSearch" placeholder="Buscar por nombre, email, DNI...">
           <button class="toolbar-btn" id="pacientesSearchBtn">Buscar</button>
           <button class="toolbar-btn toolbar-btn--ghost" id="pacientesClearBtn">Limpiar</button>
+          <label class="deudores-check">
+            <input type="checkbox" id="soloDeudores"> Solo con saldo pendiente
+          </label>
+          <span id="pacientesTotalDeuda" class="deuda-total"></span>
         </div>
         <button class="toolbar-btn" id="nuevoPacienteBtn" style="background:var(--adm-gold);color:#fff;border-color:var(--adm-gold)">
           + Nuevo paciente
@@ -360,9 +364,9 @@
       <div class="table-wrap">
         <table class="data-table">
           <thead>
-            <tr><th>#</th><th>Paciente</th><th>DNI</th><th>Teléfono</th><th>F. Nacimiento</th><th>Registrado</th><th>Acción</th></tr>
+            <tr><th>#</th><th>Paciente</th><th>DNI</th><th>Teléfono</th><th>F. Nacimiento</th><th style="text-align:right">Saldo</th><th>Registrado</th><th>Acción</th></tr>
           </thead>
-          <tbody id="pacientesBody"><tr><td colspan="7" class="table-loading">Cargando...</td></tr></tbody>
+          <tbody id="pacientesBody"><tr><td colspan="8" class="table-loading">Cargando...</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -683,7 +687,13 @@
           </div>
         </div>
         <div class="form-group-adm">
-          <label>Descripción del plan de tratamiento</label>
+          <div class="plan-label-row">
+            <label>Descripción del plan de tratamiento</label>
+            <button type="button" class="plan-import-btn" id="planImportBtn"
+              title="Agrega al final del texto las prestaciones marcadas como «a realizar» en el odontograma">
+              🦷 Traer pendientes del odontograma
+            </button>
+          </div>
           <textarea id="pmHistorial" rows="6" placeholder="Detallá el plan de tratamiento: procedimientos, secuencia, materiales, observaciones clínicas..." style="width:100%;padding:10px 12px;border:1px solid var(--adm-border);border-radius:8px;background:var(--adm-surface);color:var(--adm-text);font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
         </div>
       </div>
@@ -699,16 +709,28 @@
                 <th style="border:1px solid var(--adm-border);padding:7px 10px;text-align:left;font-weight:600">Trabajo realizado</th>
                 <th style="border:1px solid var(--adm-border);padding:7px 10px;text-align:right;font-weight:600;white-space:nowrap">Debe</th>
                 <th style="border:1px solid var(--adm-border);padding:7px 10px;text-align:right;font-weight:600;white-space:nowrap">Haber</th>
-                <th style="border:1px solid var(--adm-border);padding:7px 10px;text-align:right;font-weight:600;white-space:nowrap">Saldo</th>
+                <th style="border:1px solid var(--adm-border);padding:7px 10px;text-align:right;font-weight:600;white-space:nowrap">Saldo <span style="font-weight:400;font-size:10px;color:var(--adm-muted)">(automático)</span></th>
                 <th style="border:1px solid var(--adm-border);padding:4px 6px;text-align:center;width:32px"></th>
               </tr>
             </thead>
             <tbody id="trabajosBody">
               <!-- filas dinámicas -->
             </tbody>
+            <tfoot id="trabajosFoot">
+              <tr class="trab-tot-row">
+                <td colspan="2" style="border:1px solid var(--adm-border);padding:8px 10px;text-align:right;font-weight:600">Totales</td>
+                <td id="trabTotDebe"  style="border:1px solid var(--adm-border);padding:8px 10px;text-align:right;font-weight:600">—</td>
+                <td id="trabTotHaber" style="border:1px solid var(--adm-border);padding:8px 10px;text-align:right;font-weight:600">—</td>
+                <td id="trabTotSaldo" style="border:1px solid var(--adm-border);padding:8px 10px;text-align:right;font-weight:700">—</td>
+                <td style="border:1px solid var(--adm-border)"></td>
+              </tr>
+            </tfoot>
           </table>
         </div>
-        <button type="button" id="agregarTrabajoBtn" style="margin-top:10px;padding:6px 14px;border:1px dashed var(--adm-border);border-radius:6px;background:transparent;color:var(--adm-muted);cursor:pointer;font-size:13px">+ Agregar fila</button>
+        <div class="trab-bottom">
+          <button type="button" id="agregarTrabajoBtn" class="trab-add-btn">+ Agregar fila</button>
+          <div id="trabResumen" class="trab-resumen"></div>
+        </div>
       </div>
 
     </div><!-- end modal__body -->
