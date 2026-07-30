@@ -137,7 +137,7 @@ function initSidebar() {
       e.preventDefault();
       const section = link.dataset.section;
       if (!section) return;
-      if (State.role==='doctor' && ['dashboard','analytics','usuarios','pacientes'].includes(section)) {
+      if (State.role==='doctor' && ['dashboard','analytics','usuarios','prestaciones'].includes(section)) {
         showToast('Acceso restringido', 'error'); return;
       }
       navigateTo(section); closeSidebarMobile();
