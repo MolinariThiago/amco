@@ -58,6 +58,12 @@ const pool = new Pool({
         : false,                           // URL interna → SSL no
 });
 
+// Si Postgres reinicia o corta una conexión inactiva, loguear y seguir.
+// Sin este handler el evento 'error' no manejado tira abajo el proceso.
+pool.on('error', (err) => {
+  console.error('⚠️  PG pool: conexión perdida (se reconecta sola):', err.message);
+});
+
 // ── DB init — crea tablas si no existen ───────────
 async function initDB() {
   const client = await pool.connect();
