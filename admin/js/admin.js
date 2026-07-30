@@ -889,20 +889,20 @@ const OD_PRESTACIONES = [
   { cod:'25', nom:'Incrustación',            ambito:'cara'  },
   { cod:'26', nom:'Desgaste / abrasión',     ambito:'cara'  },
   // ── Pieza completa ──
-  { cod:'01', nom:'Pieza ausente',           ambito:'pieza', simbolo:'ausente'  },
-  { cod:'02', nom:'Extracción indicada',     ambito:'pieza', simbolo:'x'        },
-  { cod:'03', nom:'Pieza extraída',          ambito:'pieza', simbolo:'x'        },
-  { cod:'04', nom:'Implante',                ambito:'pieza', simbolo:'tornillo' },
-  { cod:'05', nom:'Corona',                  ambito:'pieza', simbolo:'circulo'  },
-  { cod:'06', nom:'Perno / muñón',           ambito:'pieza', simbolo:'perno'    },
-  { cod:'07', nom:'Endodoncia',              ambito:'pieza', simbolo:'linea'    },
-  { cod:'08', nom:'Prótesis fija',           ambito:'pieza', simbolo:'corchete' },
-  { cod:'09', nom:'Prótesis removible',      ambito:'pieza', simbolo:'corchete' },
-  { cod:'10', nom:'Resto radicular',         ambito:'pieza', simbolo:'relleno'  },
-  { cod:'11', nom:'Diente en erupción',      ambito:'pieza', simbolo:'flecha'   },
-  { cod:'12', nom:'Supernumerario',          ambito:'pieza', simbolo:'mas'      },
-  { cod:'13', nom:'Fractura',                ambito:'pieza', simbolo:'rayo'     },
-  { cod:'14', nom:'Movilidad',               ambito:'pieza', simbolo:'onda'     },
+  { cod:'01', nom:'Pieza ausente',           ambito:'pieza', simbolo:'ausente'        },
+  { cod:'02', nom:'Extracción indicada',     ambito:'pieza', simbolo:'extraccion'     },
+  { cod:'03', nom:'Pieza extraída',          ambito:'pieza', simbolo:'extraida'       },
+  { cod:'04', nom:'Implante',                ambito:'pieza', simbolo:'implante'       },
+  { cod:'05', nom:'Corona',                  ambito:'pieza', simbolo:'corona'         },
+  { cod:'06', nom:'Perno / muñón',           ambito:'pieza', simbolo:'perno'          },
+  { cod:'07', nom:'Endodoncia',              ambito:'pieza', simbolo:'endodoncia'     },
+  { cod:'08', nom:'Prótesis fija',           ambito:'pieza', simbolo:'puente'         },
+  { cod:'09', nom:'Prótesis removible',      ambito:'pieza', simbolo:'removible'      },
+  { cod:'10', nom:'Resto radicular',         ambito:'pieza', simbolo:'resto'          },
+  { cod:'11', nom:'Diente en erupción',      ambito:'pieza', simbolo:'erupcion'       },
+  { cod:'12', nom:'Supernumerario',          ambito:'pieza', simbolo:'supernumerario' },
+  { cod:'13', nom:'Fractura',                ambito:'pieza', simbolo:'fractura'       },
+  { cod:'14', nom:'Movilidad',               ambito:'pieza', simbolo:'movilidad'      },
 ];
 const OD_PREST_BY_COD = Object.fromEntries(OD_PRESTACIONES.map(p => [p.cod, p]));
 
@@ -1114,22 +1114,84 @@ function _odToothSvg(num) {
 function _odSimbolo(pieza) {
   const p = OD_PREST_BY_COD[pieza.t];
   const c = OD_COLOR[pieza.e] || OD_COLOR.p;
-  const s = p?.simbolo || 'circulo';
-  const L = (x1,y1,x2,y2) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/>`;
+  const s = p?.simbolo || 'corona';
+  // Trazo con halo blanco debajo, para que se lea sobre caras pintadas
+  const T = (d, w = 3) =>
+    `<path d="${d}" fill="none" stroke="#fff" stroke-width="${w + 2.2}" stroke-linecap="round" stroke-linejoin="round" opacity=".9"/>` +
+    `<path d="${d}" fill="none" stroke="${c}" stroke-width="${w}" stroke-linecap="round" stroke-linejoin="round"/>`;
+  const gris = `<rect x="3" y="3" width="34" height="34" fill="#CFD4D8" opacity=".92"/>`;
+
   switch (s) {
-    case 'ausente':  return `<rect x="3" y="3" width="34" height="34" fill="#D5D8DC" opacity=".85"/>${L(6,6,34,34)}${L(34,6,6,34)}`;
-    case 'x':        return L(6,6,34,34) + L(34,6,6,34);
-    case 'relleno':  return `<rect x="3" y="3" width="34" height="34" fill="${c}" opacity=".55"/>`;
-    case 'circulo':  return `<circle cx="20" cy="20" r="16" fill="none" stroke="${c}" stroke-width="2.8"/>`;
-    case 'tornillo': return L(20,5,20,35) + L(13,11,27,11) + L(13,18,27,18) + L(13,25,27,25);
-    case 'linea':    return L(20,4,20,36);
-    case 'perno':    return L(20,4,20,36) + `<circle cx="20" cy="12" r="5" fill="${c}"/>`;
-    case 'corchete': return `<path d="M9 5 L4 5 L4 35 L9 35" fill="none" stroke="${c}" stroke-width="2.6"/><path d="M31 5 L36 5 L36 35 L31 35" fill="none" stroke="${c}" stroke-width="2.6"/>`;
-    case 'flecha':   return L(20,34,20,8) + `<path d="M13 15 L20 6 L27 15" fill="none" stroke="${c}" stroke-width="2.6" stroke-linecap="round"/>`;
-    case 'mas':      return L(20,7,20,33) + L(7,20,33,20);
-    case 'rayo':     return `<path d="M24 4 L13 21 L21 21 L16 36 L28 18 L20 18 Z" fill="${c}" opacity=".8"/>`;
-    case 'onda':     return `<path d="M5 20 q7 -9 14 0 q7 9 14 0" fill="none" stroke="${c}" stroke-width="2.6"/>`;
-    default:         return `<circle cx="20" cy="20" r="16" fill="none" stroke="${c}" stroke-width="2.8"/>`;
+    // Pieza ausente: diente "apagado" con cruz gris
+    case 'ausente':
+      return gris +
+        `<path d="M8 8 L32 32 M32 8 L8 32" fill="none" stroke="#78838B" stroke-width="2.4" stroke-linecap="round"/>`;
+
+    // Extracción indicada: cruz marcada
+    case 'extraccion':
+      return T('M7 7 L33 33 M33 7 L7 33', 3.4);
+
+    // Pieza extraída: hueco + cruz
+    case 'extraida':
+      return gris + T('M8 8 L32 32 M32 8 L8 32', 3);
+
+    // Implante: tornillo con plataforma y roscas
+    case 'implante':
+      return `<rect x="13.5" y="6" width="13" height="3.8" rx="1.4" fill="#fff" stroke="${c}" stroke-width="1.6"/>` +
+        `<path d="M16.4 10.5 L23.6 10.5 L21.6 33 L18.4 33 Z" fill="${c}" opacity=".2" stroke="${c}" stroke-width="1.8" stroke-linejoin="round"/>` +
+        `<path d="M16.1 15.5 L23.9 15.5 M16.4 20.5 L23.6 20.5 M16.8 25.5 L23.2 25.5 M17.2 30 L22.8 30"
+           fill="none" stroke="${c}" stroke-width="1.7" stroke-linecap="round"/>`;
+
+    // Corona: anillo que envuelve la pieza
+    case 'corona':
+      return `<circle cx="20" cy="20" r="15.5" fill="${c}" opacity=".1"/>` +
+        `<circle cx="20" cy="20" r="15.5" fill="none" stroke="#fff" stroke-width="5" opacity=".85"/>` +
+        `<circle cx="20" cy="20" r="15.5" fill="none" stroke="${c}" stroke-width="3.2"/>`;
+
+    // Perno / muñón: poste con cabeza dentro de la raíz
+    case 'perno':
+      return T('M20 33 L20 13', 3.4) +
+        `<path d="M13.5 13 L26.5 13 L23.5 6.5 L16.5 6.5 Z" fill="${c}" stroke="#fff" stroke-width="1.4" stroke-linejoin="round"/>`;
+
+    // Endodoncia: conductos radiculares
+    case 'endodoncia':
+      return T('M20 5 L20 20 M20 20 L15.5 34 M20 20 L24.5 34', 2.9);
+
+    // Prótesis fija: barra de puente que conecta con las vecinas
+    case 'puente':
+      return `<path d="M0 20 L40 20" stroke="#fff" stroke-width="6" opacity=".9"/>` +
+        `<path d="M0 20 L40 20" stroke="${c}" stroke-width="3.6"/>` +
+        `<circle cx="20" cy="20" r="4.2" fill="#fff" stroke="${c}" stroke-width="2.2"/>`;
+
+    // Prótesis removible: retenedores a los costados
+    case 'removible':
+      return T('M11 6 L4.5 6 L4.5 34 L11 34', 2.9) + T('M29 6 L35.5 6 L35.5 34 L29 34', 2.9);
+
+    // Resto radicular: solo queda la base, con borde fracturado
+    case 'resto':
+      return `<path d="M5 20 L11 23.5 L17 18.5 L23 23.5 L29 18.5 L35 22 L35 37 L5 37 Z"
+                fill="${c}" opacity=".42" stroke="${c}" stroke-width="1.8" stroke-linejoin="round"/>`;
+
+    // Diente en erupción: flecha hacia arriba
+    case 'erupcion':
+      return T('M20 34 L20 11 M13.5 17 L20 9.5 L26.5 17', 3.2);
+
+    // Supernumerario: más, dentro de un círculo
+    case 'supernumerario':
+      return `<circle cx="20" cy="20" r="11" fill="#fff" opacity=".85"/>` +
+        `<circle cx="20" cy="20" r="11" fill="none" stroke="${c}" stroke-width="2.4"/>` +
+        T('M20 13.5 L20 26.5 M13.5 20 L26.5 20', 2.8);
+
+    // Fractura: línea de quiebre en zigzag
+    case 'fractura':
+      return T('M11 4 L18.5 14 L13 20.5 L22 27 L17 36', 2.9);
+
+    // Movilidad: flecha doble horizontal
+    case 'movilidad':
+      return T('M8.5 20 L31.5 20 M13 15.5 L8 20 L13 24.5 M27 15.5 L32 20 L27 24.5', 2.9);
+
+    default:
+      return `<circle cx="20" cy="20" r="15.5" fill="none" stroke="${c}" stroke-width="3.2"/>`;
   }
 }
 
