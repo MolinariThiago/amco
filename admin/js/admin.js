@@ -420,6 +420,35 @@ async function loadUsuarios() {
   } catch(err) { showToast('Error: '+err.message,'error'); }
 }
 
+/* ── Descargar copia de seguridad ── */
+document.getElementById('backupBtn')?.addEventListener('click', async () => {
+  const btn = document.getElementById('backupBtn');
+  const txt = btn.textContent;
+  btn.disabled = true;
+  btn.textContent = 'Generando…';
+  try {
+    const res = await fetch(BASE_URL + '/api/admin/backup', {
+      headers: { 'Authorization': `Bearer ${State.token}` }
+    });
+    if (!res.ok) throw new Error('No se pudo generar el backup');
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    const a    = document.createElement('a');
+    a.href = url;
+    a.download = `amco-backup-${new Date().toISOString().slice(0,10)}.json`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+    showToast('Copia de seguridad descargada', 'success');
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  } finally {
+    btn.disabled = false;
+    btn.textContent = txt;
+  }
+});
+
 window.editUser = function(username) {
   const u = (State._usuarios || []).find(x => x.username === username);
   if (!u) return;

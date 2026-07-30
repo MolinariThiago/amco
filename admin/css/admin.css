@@ -358,12 +358,6 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
 .form-group-adm input.input-error,.form-group-adm select.input-error{border-color:#F87171!important;box-shadow:0 0 0 3px rgba(248,113,113,.11)!important}
 
 /* ═══ CRED CARDS ═══ */
-.cred-card{background:var(--adm-bg);border:1px solid var(--adm-border);border-radius:10px;padding:12px 16px;transition:box-shadow .18s}
-.cred-card:hover{box-shadow:var(--shadow-sm)}
-.cred-card--doctor{border-left:3px solid var(--adm-gold)}
-.cred-card__role{font-size:9.5px;font-weight:700;letter-spacing:1px;text-transform:uppercase;color:var(--adm-subtle);margin-bottom:5px}
-.cred-card__info{display:flex;gap:8px;font-size:13px;font-weight:600;color:var(--adm-text);font-family:'Courier New',monospace;margin-bottom:4px}
-.cred-card__desc{font-size:12px;color:var(--adm-muted)}
 
 /* ═══ FICHA CLÍNICA ═══ */
 .ficha-tabs{position:sticky;top:65px;z-index:9;display:flex;gap:2px;padding:0 24px;background:var(--adm-surface);border-bottom:1px solid var(--adm-border);overflow-x:auto;scrollbar-width:none}
@@ -481,6 +475,17 @@ svg{stroke:currentColor;fill:none;stroke-width:1.5;stroke-linecap:round;stroke-l
   .od-resumen-head{padding:8px 10px}
   #trabajosTable{min-width:520px}
 }
+
+/* ═══ SEGURIDAD Y RESPALDO ═══ */
+.seg-wrap{display:flex;flex-direction:column;gap:10px;margin-top:16px}
+.seg-item{display:flex;gap:12px;padding:13px 15px;border:1px solid var(--adm-border);border-radius:var(--radius);background:var(--adm-surface-2)}
+.seg-item--ok{background:#F0FDF4;border-color:#BBF7D0}
+.seg-item--warn{background:#FFFBEB;border-color:#FDE68A}
+.seg-item__ico{font-size:18px;line-height:1.2;flex-shrink:0}
+.seg-item strong{display:block;font-size:13px;font-weight:600;color:var(--adm-text);margin-bottom:3px}
+.seg-item span{display:block;font-size:12.5px;color:var(--adm-muted);line-height:1.55}
+.seg-item em{font-style:normal;font-weight:600;color:var(--adm-text-2)}
+.seg-btn{white-space:nowrap}
 
 /* ═══ CUENTA CORRIENTE / TRABAJOS ═══ */
 .trab-tot-row{background:var(--adm-surface-2)}

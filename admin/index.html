@@ -308,33 +308,36 @@
         </div>
 
         <div class="dash-card">
-          <h3>Credenciales actuales</h3>
-          <div style="margin-top:16px;display:flex;flex-direction:column;gap:12px">
-            <div class="cred-card">
-              <div class="cred-card__role">Admin</div>
-              <div class="cred-card__info"><span>admin</span><span>/ 1234</span></div>
-              <div class="cred-card__desc">Acceso completo a todas las secciones</div>
+          <h3>Seguridad y respaldo</h3>
+          <div class="seg-wrap">
+
+            <div class="seg-item seg-item--ok">
+              <div class="seg-item__ico">🔒</div>
+              <div>
+                <strong>Contraseñas protegidas</strong>
+                <span>Se guardan cifradas con scrypt y una sal distinta para cada usuario. Nadie —ni vos— puede verlas: si alguien la olvida, se le asigna una nueva desde el botón <em>Editar</em> de la tabla de arriba.</span>
+              </div>
             </div>
-            <div class="cred-card cred-card--doctor">
-              <div class="cred-card__role">Luisina B. Baccon</div>
-              <div class="cred-card__info"><span>luisina</span><span>/ luisina32</span></div>
-              <div class="cred-card__desc">Solo ve sus propios turnos</div>
+
+            <div class="seg-item">
+              <div class="seg-item__ico">💾</div>
+              <div>
+                <strong>Copia de seguridad</strong>
+                <span>Descargá un archivo con todos los pacientes, fichas clínicas y turnos. Guardalo en tu computadora o en la nube. Conviene hacerlo una vez por semana.</span>
+                <button type="button" class="toolbar-btn seg-btn" id="backupBtn" style="margin-top:10px">
+                  ⬇ Descargar copia de seguridad
+                </button>
+              </div>
             </div>
-            <div class="cred-card cred-card--doctor">
-              <div class="cred-card__role">Soledad Cappello</div>
-              <div class="cred-card__info"><span>sole</span><span>/ sole 32</span></div>
-              <div class="cred-card__desc">Solo ve sus propios turnos</div>
+
+            <div class="seg-item seg-item--warn">
+              <div class="seg-item__ico">⚠️</div>
+              <div>
+                <strong>Recomendaciones</strong>
+                <span>Que cada profesional tenga su propio usuario y no lo comparta. Evitá contraseñas cortas o previsibles. Cambialas si alguien deja de trabajar en la clínica.</span>
+              </div>
             </div>
-            <div class="cred-card cred-card--doctor">
-              <div class="cred-card__role">Francisco Molinari</div>
-              <div class="cred-card__info"><span>francisco</span><span>/ francisco 32</span></div>
-              <div class="cred-card__desc">Solo ve sus propios turnos</div>
-            </div>
-            <div class="cred-card cred-card--doctor">
-              <div class="cred-card__role">Trastdort Maria Magdalena</div>
-              <div class="cred-card__info"><span>magdalena</span><span>/ magdalena32</span></div>
-              <div class="cred-card__desc">Solo ve sus propios turnos</div>
-            </div>
+
           </div>
         </div>
 

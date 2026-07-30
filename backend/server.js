@@ -32,13 +32,58 @@ app.use(cors({
 app.use(express.json());
 
 // ── Password hashing ──────────────────────────────
+//  Formato actual: scrypt con sal aleatoria por usuario → "s2$<sal>$<hash>"
+//  Formatos viejos que se siguen aceptando (y se migran solos al loguearse):
+//    · SHA-256 con sal derivada del largo (hashed = true)
+//    · Texto plano (hashed = false)
+//  Nadie queda afuera: la migración pasa sola en el primer login correcto.
 const PASS_PEPPER = process.env.PASS_PEPPER || 'amco_pepper_changeme_2026';
+const SCRYPT = { N: 16384, r: 8, p: 1, keylen: 64 };
+
 function hashPassword(plain) {
+  return new Promise((resolve, reject) => {
+    const salt = crypto.randomBytes(16);
+    crypto.scrypt(PASS_PEPPER + plain, salt, SCRYPT.keylen, SCRYPT, (err, dk) =>
+      err ? reject(err) : resolve(`s2$${salt.toString('hex')}$${dk.toString('hex')}`));
+  });
+}
+
+function verifyScrypt(plain, stored) {
+  return new Promise(resolve => {
+    const parts = String(stored).split('$');
+    if (parts.length !== 3) return resolve(false);
+    let salt, expected;
+    try {
+      salt     = Buffer.from(parts[1], 'hex');
+      expected = Buffer.from(parts[2], 'hex');
+    } catch { return resolve(false); }
+    if (!salt.length || !expected.length) return resolve(false);
+    crypto.scrypt(PASS_PEPPER + plain, salt, expected.length, SCRYPT, (err, dk) => {
+      if (err) return resolve(false);
+      resolve(dk.length === expected.length && crypto.timingSafeEqual(dk, expected));
+    });
+  });
+}
+
+// Hash viejo — solo para validar contraseñas que todavía no se migraron
+function hashPasswordLegacy(plain) {
   const salt = 'amco_salt_v4_' + plain.length;
   return crypto.createHash('sha256').update(PASS_PEPPER + salt + plain).digest('hex');
 }
-function verifyPassword(plain, hashed) {
-  return hashPassword(plain) === hashed;
+
+// ── Límite de intentos de login (en memoria) ──────
+const loginTries = new Map();
+const MAX_TRIES = 10, LOCK_MS = 15 * 60 * 1000;
+function loginBlocked(key) {
+  const t = loginTries.get(key);
+  if (!t) return false;
+  if (Date.now() - t.first > LOCK_MS) { loginTries.delete(key); return false; }
+  return t.count >= MAX_TRIES;
+}
+function loginFailed(key) {
+  const t = loginTries.get(key);
+  if (!t || Date.now() - t.first > LOCK_MS) loginTries.set(key, { count: 1, first: Date.now() });
+  else t.count++;
 }
 
 // ── Static files ──────────────────────────────────
@@ -171,7 +216,7 @@ async function initDB() {
       await client.query(
         `INSERT INTO users (username, password, hashed, role, nombre, medico)
          VALUES ($1, $2, true, 'admin', 'Administrador', null)`,
-        ['admin', hashPassword('1234')]
+        ['admin', await hashPassword('1234')]
       );
       console.log('✅ Usuario admin creado (admin / 1234)');
     }
@@ -286,25 +331,51 @@ function mapPaciente(row) {
 app.post('/api/admin/login', async (req, res) => {
   try {
     const { username, password } = req.body;
-    const result = await pool.query(`SELECT * FROM users WHERE username = $1`, [username]);
-    if (result.rows.length === 0) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    if (!username || !password) return res.status(400).json({ error: 'Usuario y contraseña requeridos' });
 
-    const user = result.rows[0];
-    let valid = false;
-
-    if (user.hashed) {
-      valid = verifyPassword(password, user.password);
-    } else {
-      if (user.password === password) {
-        valid = true;
-        await pool.query(
-          `UPDATE users SET password = $1, hashed = true WHERE id = $2`,
-          [hashPassword(password), user.id]
-        );
-      }
+    const clave = `${req.ip}|${username}`;
+    if (loginBlocked(clave)) {
+      return res.status(429).json({ error: 'Demasiados intentos fallidos. Esperá 15 minutos e intentá de nuevo.' });
     }
 
-    if (!valid) return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    const result = await pool.query(`SELECT * FROM users WHERE username = $1`, [username]);
+    if (result.rows.length === 0) {
+      loginFailed(clave);
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
+
+    const user = result.rows[0];
+    let valid = false, migrar = false;
+
+    if (!user.hashed) {
+      // Contraseña guardada en texto plano (formato más viejo)
+      valid  = user.password === password;
+      migrar = valid;
+    } else if (String(user.password).startsWith('s2$')) {
+      valid = await verifyScrypt(password, user.password);
+    } else {
+      // SHA-256 viejo
+      valid  = hashPasswordLegacy(password) === user.password;
+      migrar = valid;
+    }
+
+    if (!valid) {
+      loginFailed(clave);
+      return res.status(401).json({ error: 'Usuario o contraseña incorrectos' });
+    }
+    loginTries.delete(clave);
+
+    // Migración transparente: la contraseña no cambia, solo cómo se guarda.
+    // Si falla, el login sigue adelante igual (nunca deja a nadie afuera).
+    if (migrar) {
+      try {
+        await pool.query(`UPDATE users SET password = $1, hashed = true WHERE id = $2`,
+          [await hashPassword(password), user.id]);
+        console.log(`🔐 Contraseña de "${user.username}" migrada a scrypt`);
+      } catch (e) {
+        console.error('No se pudo migrar el hash (login OK igual):', e.message);
+      }
+    }
 
     const token = jwt.sign(
       { username: user.username, role: user.role, medico: user.medico, nombre: user.nombre },
@@ -649,7 +720,7 @@ app.post('/api/users', auth, adminOnly, async (req, res) => {
     if (!username || !password) return res.status(400).json({ error: 'username y password requeridos' });
     await pool.query(
       `INSERT INTO users (username, password, hashed, role, nombre, medico) VALUES ($1, $2, true, $3, $4, $5)`,
-      [username, hashPassword(password), role, nombre || username, medico || null]
+      [username, await hashPassword(password), role, nombre || username, medico || null]
     );
     res.json({ ok: true });
   } catch (err) {
@@ -668,7 +739,7 @@ app.patch('/api/users/:username', auth, adminOnly, async (req, res) => {
     }
     if (password !== undefined && String(password).trim() !== '') {
       updates.push(`password = $${idx++}`, `hashed = true`);
-      params.push(hashPassword(String(password).trim()));
+      params.push(await hashPassword(String(password).trim()));
     }
     if (updates.length === 0) return res.status(400).json({ error: 'Nada para actualizar' });
     params.push(req.params.username);
@@ -690,6 +761,39 @@ app.delete('/api/users/:username', auth, adminOnly, async (req, res) => {
     res.json({ ok: true });
   } catch (err) {
     res.status(500).json({ error: 'Error interno del servidor' });
+  }
+});
+
+// ── BACKUP: exporta todo en un JSON descargable ───
+//  Solo lectura: no modifica nada. No incluye contraseñas.
+app.get('/api/admin/backup', auth, adminOnly, async (req, res) => {
+  try {
+    const [pacientes, turnos, usuarios] = await Promise.all([
+      pool.query(`SELECT * FROM pacientes ORDER BY id`),
+      pool.query(`SELECT * FROM turnos ORDER BY id`),
+      pool.query(`SELECT id, username, role, nombre, medico FROM users ORDER BY id`),
+    ]);
+    const dump = {
+      _generado: new Date().toISOString(),
+      _origen: 'AMCO Centro Odontológico',
+      _nota: 'Backup de datos. No incluye contraseñas (los usuarios se recrean desde el panel).',
+      _totales: {
+        pacientes: pacientes.rows.length,
+        turnos: turnos.rows.length,
+        usuarios: usuarios.rows.length,
+      },
+      pacientes: pacientes.rows,
+      turnos: turnos.rows,
+      usuarios: usuarios.rows,
+    };
+    const fecha = new Date().toISOString().slice(0, 10);
+    res.setHeader('Content-Type', 'application/json; charset=utf-8');
+    res.setHeader('Content-Disposition', `attachment; filename="amco-backup-${fecha}.json"`);
+    res.send(JSON.stringify(dump, null, 2));
+    console.log(`💾 Backup descargado por "${req.user.username}" — ${pacientes.rows.length} pacientes, ${turnos.rows.length} turnos`);
+  } catch (err) {
+    console.error('GET /api/admin/backup error:', err);
+    res.status(500).json({ error: 'Error al generar el backup' });
   }
 });
 
@@ -734,7 +838,6 @@ async function start() {
     app.listen(PORT, () => {
       console.log(`\n🦷  AMCO -> http://localhost:${PORT}`);
       console.log(`🔒  Admin -> http://localhost:${PORT}/admin\n`);
-      console.log('  admin / 1234  (administrador)');
     });
   } catch (err) {
     console.error('❌ Error al iniciar el servidor:', err);
