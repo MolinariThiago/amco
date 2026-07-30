@@ -125,6 +125,8 @@ function initPanel() {
     btn.classList.add('spinning');
     loadCurrentSection().finally(()=>btn.classList.remove('spinning'));
   });
+  // Tour de bienvenida (tour.js) — si no cargó, no pasa nada
+  if (typeof window.initTour === 'function') { try { window.initTour(); } catch(_) {} }
 }
 
 /* ── Sidebar ── */
