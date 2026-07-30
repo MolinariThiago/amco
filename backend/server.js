@@ -604,7 +604,7 @@ app.get('/api/analytics', auth, adminOnly, async (req, res) => {
       pool.query(`SELECT COUNT(*) FROM turnos WHERE deleted_at IS NOT NULL`),
       pool.query(`SELECT COUNT(*) FROM analytics WHERE event = 'pageview'`),
       pool.query(`SELECT COUNT(DISTINCT session_id) FROM analytics WHERE session_id != ''`),
-      pool.query(`SELECT * FROM turnos ORDER BY id DESC LIMIT 5`),
+      pool.query(`SELECT * FROM turnos WHERE deleted_at IS NULL ORDER BY id DESC LIMIT 5`),
       pool.query(`SELECT servicio, COUNT(*) as total FROM turnos WHERE deleted_at IS NULL GROUP BY servicio ORDER BY total DESC`),
       pool.query(`SELECT created_at::date as dia, COUNT(*) as c FROM analytics WHERE event = 'pageview' AND created_at >= NOW() - INTERVAL '30 days' GROUP BY dia ORDER BY dia`),
       pool.query(`SELECT created_at::date as dia, COUNT(*) as c FROM turnos WHERE deleted_at IS NULL AND created_at >= NOW() - INTERVAL '30 days' GROUP BY dia ORDER BY dia`),
