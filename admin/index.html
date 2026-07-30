@@ -76,6 +76,10 @@
         <svg viewBox="0 0 24 24"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/><path d="M12 11v6M9 14h6"/></svg>
         Pacientes
       </a>
+      <a href="#" class="sidebar__link" data-section="prestaciones" data-admin-only>
+        <svg viewBox="0 0 24 24"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        Prestaciones
+      </a>
     </nav>
     <div class="sidebar__footer">
       <div class="sidebar__user">
@@ -370,6 +374,37 @@
             <tr><th>#</th><th>Paciente</th><th>DNI</th><th>Teléfono</th><th>F. Nacimiento</th><th style="text-align:right">Saldo</th><th>Registrado</th><th>Acción</th></tr>
           </thead>
           <tbody id="pacientesBody"><tr><td colspan="8" class="table-loading">Cargando...</td></tr></tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- ═══ PRESTACIONES (catálogo con precios) ═══ -->
+    <section id="section-prestaciones" class="admin-section" style="display:none">
+      <div class="empty-info" style="margin-bottom:12px">
+        <svg viewBox="0 0 24 24" width="32" height="32"><rect x="4" y="3" width="16" height="18" rx="2"/><path d="M8 8h8M8 12h8M8 16h5"/></svg>
+        <p>Catálogo de tratamientos con sus precios. Los códigos coinciden con los del odontograma: cuando marques prestaciones «a realizar» y las traigas al plan, se cargan con este precio.</p>
+      </div>
+      <div class="section-toolbar">
+        <div class="toolbar-left">
+          <input type="search" class="toolbar-search" id="prestSearch" placeholder="Buscar por código o nombre…">
+          <label class="deudores-check">
+            <input type="checkbox" id="prestSoloActivas" checked> Solo activas
+          </label>
+        </div>
+        <button class="toolbar-btn" id="nuevaPrestBtn" style="background:var(--adm-gold);color:#fff;border-color:var(--adm-gold);white-space:nowrap">+ Nueva prestación</button>
+      </div>
+      <div class="table-wrap">
+        <table class="data-table">
+          <thead>
+            <tr>
+              <th style="width:80px">Código</th>
+              <th>Nombre</th>
+              <th style="width:180px;text-align:right">Precio particular</th>
+              <th style="width:110px">Estado</th>
+              <th style="width:130px">Acciones</th>
+            </tr>
+          </thead>
+          <tbody id="prestBody"><tr><td colspan="5" class="table-loading">Cargando…</td></tr></tbody>
         </table>
       </div>
     </section>
@@ -692,10 +727,16 @@
         <div class="form-group-adm">
           <div class="plan-label-row">
             <label>Descripción del plan de tratamiento</label>
-            <button type="button" class="plan-import-btn" id="planImportBtn"
-              title="Agrega al final del texto las prestaciones marcadas como «a realizar» en el odontograma">
-              🦷 Traer pendientes del odontograma
-            </button>
+            <div class="plan-actions">
+              <button type="button" class="plan-import-btn" id="planImportBtn"
+                title="Agrega al final del texto las prestaciones marcadas como «a realizar» en el odontograma">
+                🦷 Traer pendientes del odontograma
+              </button>
+              <button type="button" class="plan-import-btn" id="planPresupBtn"
+                title="Genera un presupuesto con los precios del catálogo">
+                🧾 Generar presupuesto
+              </button>
+            </div>
           </div>
           <textarea id="pmHistorial" rows="6" placeholder="Detallá el plan de tratamiento: procedimientos, secuencia, materiales, observaciones clínicas..." style="width:100%;padding:10px 12px;border:1px solid var(--adm-border);border-radius:8px;background:var(--adm-surface);color:var(--adm-text);font-family:inherit;font-size:13px;resize:vertical;box-sizing:border-box;line-height:1.6"></textarea>
         </div>
@@ -835,6 +876,58 @@
     <div class="modal__footer nt-footer">
       <button class="modal-btn" onclick="closeNuevoTurnoModal()" style="background:transparent;border:1px solid var(--adm-border);color:var(--adm-text)">Cancelar</button>
       <button class="modal-btn modal-btn--save nt-save-btn" id="ntSaveBtn">✓ Crear turno</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRESTACION -->
+<div id="prestModal" class="modal" style="display:none">
+  <div class="modal__backdrop" id="prestModalBackdrop"></div>
+  <div class="modal__box" style="max-width:440px">
+    <div class="modal__header">
+      <h2 id="prestModalTitle">Nueva prestación</h2>
+      <button class="modal__close" id="prestModalClose">✕</button>
+    </div>
+    <div class="modal__body">
+      <div class="form-group-adm">
+        <label>Código <span style="color:var(--adm-red)">*</span></label>
+        <input type="text" id="prCodigo" placeholder="Ej: 20, 04, 100…" maxlength="10">
+        <span style="font-size:11px;color:var(--adm-muted)">Los códigos 01–14 y 20–26 se usan también en el odontograma. Podés inventar códigos nuevos para otros tratamientos.</span>
+      </div>
+      <div class="form-group-adm">
+        <label>Nombre <span style="color:var(--adm-red)">*</span></label>
+        <input type="text" id="prNombre" placeholder="Ej: Limpieza dental">
+      </div>
+      <div class="form-group-adm">
+        <label>Precio particular</label>
+        <input type="number" id="prPrecio" placeholder="0" step="0.01" min="0">
+      </div>
+      <div class="form-group-adm">
+        <label class="deudores-check" style="margin-top:4px">
+          <input type="checkbox" id="prActivo" checked> Prestación activa (aparece al armar planes)
+        </label>
+      </div>
+    </div>
+    <div class="modal__footer">
+      <button class="modal-btn modal-btn--save" id="prSaveBtn">💾 Guardar</button>
+    </div>
+  </div>
+</div>
+
+<!-- MODAL PRESUPUESTO (vista para imprimir/enviar al paciente) -->
+<div id="presupModal" class="modal" style="display:none">
+  <div class="modal__backdrop" id="presupModalBackdrop"></div>
+  <div class="modal__box" style="max-width:640px;max-height:92vh;overflow-y:auto">
+    <div class="modal__header">
+      <h2>Presupuesto</h2>
+      <button class="modal__close" id="presupModalClose">✕</button>
+    </div>
+    <div class="modal__body">
+      <div id="presupContenido"></div>
+    </div>
+    <div class="modal__footer">
+      <button class="modal-btn" id="presupImprimir">🖨 Imprimir</button>
+      <button class="modal-btn" id="presupCopiar">📋 Copiar al plan</button>
     </div>
   </div>
 </div>

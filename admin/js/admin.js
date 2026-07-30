@@ -3,7 +3,7 @@
 const SECTION_TITLES = {
   dashboard:'Dashboard', turnos:'Turnos', eliminados:'Turnos eliminados',
   analytics:'Analítica', usuarios:'Usuarios', pacientes:'Pacientes',
-  'historial-hoy':'Historial del día'
+  prestaciones:'Prestaciones', 'historial-hoy':'Historial del día'
 };
 
 const BASE_URL = (typeof window !== 'undefined' && window.location.hostname !== 'localhost')
@@ -15,6 +15,7 @@ const State = {
   section:'dashboard', turnos:[], eliminados:[], analytics:null,
   currentTurno:null, calYear:new Date().getFullYear(), calMonth:new Date().getMonth(),
   pacientes:[], _pacienteEditId:null, _odontograma:{},
+  prestaciones:[], _prestEditId:null,
 };
 
 const API = {
@@ -41,6 +42,10 @@ const API = {
   patchPaciente:   (id, b) => API.req('PATCH',  `/api/pacientes/${id}`, b),
   delPaciente:     (id)    => API.req('DELETE', `/api/pacientes/${id}`),
   getPacientesHoy: ()      => API.req('GET',    '/api/pacientes/hoy'),
+  getPrestaciones: ()      => API.req('GET',    '/api/prestaciones'),
+  addPrestacion:   (b)     => API.req('POST',   '/api/prestaciones', b),
+  patchPrestacion: (id, b) => API.req('PATCH',  `/api/prestaciones/${id}`, b),
+  delPrestacion:   (id)    => API.req('DELETE', `/api/prestaciones/${id}`),
 };
 
 /* ── Toast ── */
@@ -156,6 +161,7 @@ async function loadCurrentSection() {
     case 'analytics':     return loadAnalytics();
     case 'usuarios':      return loadUsuarios();
     case 'pacientes':     return loadPacientes();
+    case 'prestaciones':  return loadPrestaciones();
     case 'historial-hoy': return loadHistorialHoy();
   }
 }
@@ -419,6 +425,248 @@ async function loadUsuarios() {
     </tr>`).join('');
   } catch(err) { showToast('Error: '+err.message,'error'); }
 }
+
+/* ══════════════════════════════════════════════════
+   PRESTACIONES (catálogo con precios)
+   El admin edita códigos, nombres y precios. Los demás
+   usuarios solo leen (para que el plan traiga los precios).
+══════════════════════════════════════════════════ */
+
+function precioARS(n) {
+  return '$ ' + Number(n || 0).toLocaleString('es-AR', { minimumFractionDigits:2, maximumFractionDigits:2 });
+}
+
+async function cargarCatalogoEnMemoria() {
+  try {
+    const r = await API.getPrestaciones();
+    State.prestaciones = r.data || [];
+  } catch (err) {
+    console.warn('No se pudo cargar el catálogo:', err.message);
+    State.prestaciones = [];
+  }
+}
+
+async function loadPrestaciones() {
+  const tbody = document.getElementById('prestBody');
+  if (tbody) tbody.innerHTML = '<tr><td colspan="5" class="table-loading">Cargando…</td></tr>';
+  try {
+    const r = await API.getPrestaciones();
+    State.prestaciones = r.data || [];
+    renderPrestacionesTabla();
+  } catch (err) {
+    if (tbody) tbody.innerHTML = `<tr><td colspan="5" class="table-loading">Error: ${escHtml(err.message)}</td></tr>`;
+  }
+}
+
+function renderPrestacionesTabla() {
+  const tbody = document.getElementById('prestBody');
+  if (!tbody) return;
+  const q = (document.getElementById('prestSearch')?.value || '').trim().toLowerCase();
+  const soloActivas = document.getElementById('prestSoloActivas')?.checked;
+  let lista = State.prestaciones.slice();
+  if (soloActivas) lista = lista.filter(p => p.activo);
+  if (q) lista = lista.filter(p =>
+    (p.codigo || '').toLowerCase().includes(q) ||
+    (p.nombre || '').toLowerCase().includes(q));
+  if (!lista.length) {
+    tbody.innerHTML = '<tr><td colspan="5" class="table-loading">No hay prestaciones que coincidan.</td></tr>';
+    return;
+  }
+  tbody.innerHTML = lista.map(p => `
+    <tr>
+      <td><strong style="font-family:monospace;color:var(--adm-gold-dark)">${escHtml(p.codigo)}</strong></td>
+      <td>${escHtml(p.nombre)}</td>
+      <td style="text-align:right;font-family:monospace;font-weight:600">${precioARS(p.precio)}</td>
+      <td>${p.activo
+        ? '<span class="badge badge--confirmado">Activa</span>'
+        : '<span class="badge badge--cancelado">Inactiva</span>'}</td>
+      <td style="display:flex;gap:6px;flex-wrap:wrap">
+        <button class="action-btn" onclick="editarPrestacion(${p.id})">
+          <svg viewBox="0 0 24 24" width="12" height="12"><path d="M11 4H4a2 2 0 00-2 2v14a2 2 0 002 2h14a2 2 0 002-2v-7M18.5 2.5a2.121 2.121 0 013 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Editar
+        </button>
+        ${p.activo ? `<button class="action-btn action-btn--danger" onclick="darDeBajaPrestacion(${p.id})">
+          Dar de baja
+        </button>` : ''}
+      </td>
+    </tr>`).join('');
+}
+
+document.getElementById('prestSearch')?.addEventListener('input', renderPrestacionesTabla);
+document.getElementById('prestSoloActivas')?.addEventListener('change', renderPrestacionesTabla);
+
+document.getElementById('nuevaPrestBtn')?.addEventListener('click', () => abrirPrestModal(null));
+
+window.editarPrestacion = function(id) { abrirPrestModal(id); };
+
+window.darDeBajaPrestacion = async function(id) {
+  const p = State.prestaciones.find(x => x.id === id);
+  if (!confirm(`¿Dar de baja la prestación "${p?.nombre}"? La podés volver a activar desde el editor.`)) return;
+  try {
+    await API.delPrestacion(id);
+    showToast('Prestación dada de baja', 'default');
+    loadPrestaciones();
+  } catch (err) { showToast('Error: ' + err.message, 'error'); }
+};
+
+function abrirPrestModal(id) {
+  State._prestEditId = id;
+  const p = id ? State.prestaciones.find(x => x.id === id) : null;
+  document.getElementById('prestModalTitle').textContent = id ? 'Editar prestación' : 'Nueva prestación';
+  document.getElementById('prCodigo').value = p?.codigo || '';
+  document.getElementById('prNombre').value = p?.nombre || '';
+  document.getElementById('prPrecio').value = p?.precio ?? '';
+  document.getElementById('prActivo').checked = p ? !!p.activo : true;
+  document.getElementById('prestModal').style.display = 'flex';
+}
+function cerrarPrestModal() { document.getElementById('prestModal').style.display = 'none'; }
+document.getElementById('prestModalClose')?.addEventListener('click', cerrarPrestModal);
+document.getElementById('prestModalBackdrop')?.addEventListener('click', cerrarPrestModal);
+
+document.getElementById('prSaveBtn')?.addEventListener('click', async () => {
+  const body = {
+    codigo: document.getElementById('prCodigo').value.trim(),
+    nombre: document.getElementById('prNombre').value.trim(),
+    precio: Number(document.getElementById('prPrecio').value) || 0,
+    activo: document.getElementById('prActivo').checked,
+  };
+  if (!body.codigo || !body.nombre) return showToast('Código y nombre son obligatorios', 'error');
+  try {
+    if (State._prestEditId) await API.patchPrestacion(State._prestEditId, body);
+    else                    await API.addPrestacion(body);
+    showToast('Prestación guardada', 'success');
+    cerrarPrestModal();
+    loadPrestaciones();
+  } catch (err) { showToast('Error: ' + err.message, 'error'); }
+});
+
+/* ── Presupuesto: junta las «a realizar» del odontograma con
+   los precios del catálogo y arma un detalle. Si no hay precios
+   cargados en el catálogo, se listan igual pero sin importe. ── */
+
+function _presupItems() {
+  const od = State._odontograma || {};
+  const tipo = od._tipo || 'permanente';
+  const set = OD_TEETH[tipo] || OD_TEETH.permanente;
+  // Índice del catálogo por código, ignora inactivos si hay una activa
+  const cat = {};
+  for (const p of State.prestaciones || []) {
+    if (!cat[p.codigo] || (!cat[p.codigo].activo && p.activo)) cat[p.codigo] = p;
+  }
+  const items = [];
+  for (const num of [...set.top, ...set.bot]) {
+    const d = State._odontograma[num];
+    if (!d) continue;
+    const acumular = (t, cara) => {
+      if (t.e !== 'p') return;                        // solo lo pendiente
+      const p = cat[t.t];
+      const nombre = p?.nombre || `Prestación ${t.t}`;
+      items.push({
+        pieza: num,
+        cara: cara ? odNombreCara(num, cara) : null,
+        codigo: t.t,
+        nombre,
+        precio: Number(p?.precio) || 0,
+        conPrecio: p && Number(p.precio) > 0,
+      });
+    };
+    if (d.pieza) acumular(d.pieza, null);
+    for (const [cara, m] of Object.entries(d.caras || {})) acumular(m, cara);
+  }
+  return items;
+}
+
+document.getElementById('planPresupBtn')?.addEventListener('click', async () => {
+  await cargarCatalogoEnMemoria();
+  const items = _presupItems();
+  if (!items.length) return showToast('No hay prestaciones marcadas como «a realizar» en el odontograma', 'default');
+  abrirPresupuestoModal(items);
+});
+
+function abrirPresupuestoModal(items) {
+  const nombre = document.getElementById('pmNombre')?.value.trim() || 'Paciente';
+  const hoy = new Date().toLocaleDateString('es-AR');
+  const total = items.reduce((s, i) => s + i.precio, 0);
+  const conPrecio = items.filter(i => i.conPrecio).length;
+  const sinPrecio = items.length - conPrecio;
+  const filas = items.map(i => `
+    <tr>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--adm-border);font-family:monospace;font-size:12px">${i.pieza}${i.cara ? ' <span style="color:var(--adm-muted)">'+i.cara+'</span>' : ''}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--adm-border)">${escHtml(i.nombre)}</td>
+      <td style="padding:8px 10px;border-bottom:1px solid var(--adm-border);text-align:right;font-family:monospace;color:${i.conPrecio ? 'var(--adm-text)' : 'var(--adm-subtle)'}">${i.conPrecio ? precioARS(i.precio) : '—'}</td>
+    </tr>`).join('');
+  const html = `
+    <div class="presup-doc">
+      <div class="presup-doc__hdr">
+        <div>
+          <div style="font-family:'Playfair Display',serif;font-size:22px;font-weight:700;letter-spacing:4px">AMCO</div>
+          <div style="font-size:10px;letter-spacing:1.5px;color:var(--adm-muted);text-transform:uppercase">Centro Odontológico</div>
+        </div>
+        <div style="text-align:right;font-size:12px;color:var(--adm-muted)">
+          <div>Presupuesto</div>
+          <div>${hoy}</div>
+        </div>
+      </div>
+      <div style="margin:14px 0 10px;font-size:13px"><strong>Paciente:</strong> ${escHtml(nombre)}</div>
+      <table style="width:100%;border-collapse:collapse;font-size:13px;margin-top:8px">
+        <thead>
+          <tr style="background:var(--adm-surface-2)">
+            <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--adm-muted);border-bottom:1px solid var(--adm-border);width:120px">Pieza</th>
+            <th style="padding:8px 10px;text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--adm-muted);border-bottom:1px solid var(--adm-border)">Tratamiento</th>
+            <th style="padding:8px 10px;text-align:right;font-size:11px;text-transform:uppercase;letter-spacing:.5px;color:var(--adm-muted);border-bottom:1px solid var(--adm-border);width:130px">Importe</th>
+          </tr>
+        </thead>
+        <tbody>${filas}</tbody>
+        <tfoot>
+          <tr>
+            <td colspan="2" style="padding:12px 10px;text-align:right;font-weight:600;border-top:2px solid var(--adm-text)">Total estimado</td>
+            <td style="padding:12px 10px;text-align:right;font-family:monospace;font-weight:700;border-top:2px solid var(--adm-text);font-size:15px">${precioARS(total)}</td>
+          </tr>
+        </tfoot>
+      </table>
+      ${sinPrecio > 0 ? `<p style="margin-top:12px;font-size:11.5px;color:var(--adm-warning);background:#FFFBEB;border:1px solid #FDE68A;padding:8px 12px;border-radius:6px">${sinPrecio} prestación(es) sin precio cargado. Editalas en <em>Prestaciones</em> para que sumen al total.</p>` : ''}
+      <p style="margin-top:14px;font-size:11px;color:var(--adm-muted);line-height:1.6">Presupuesto orientativo generado desde el odontograma. Los importes pueden variar según hallazgos clínicos durante el tratamiento.<br>Hipólito Yrigoyen 1293, Concordia · (0345) 421 6043</p>
+    </div>`;
+  document.getElementById('presupContenido').innerHTML = html;
+  document.getElementById('presupModal').style.display = 'flex';
+  // Guardamos los items para el botón "copiar al plan"
+  document.getElementById('presupModal').dataset.items = JSON.stringify(items);
+  document.getElementById('presupModal').dataset.total = total.toString();
+}
+
+function cerrarPresupModal() { document.getElementById('presupModal').style.display = 'none'; }
+document.getElementById('presupModalClose')?.addEventListener('click', cerrarPresupModal);
+document.getElementById('presupModalBackdrop')?.addEventListener('click', cerrarPresupModal);
+
+document.getElementById('presupImprimir')?.addEventListener('click', () => {
+  const cont = document.getElementById('presupContenido').innerHTML;
+  const w = window.open('', '_blank', 'width=780,height=900');
+  if (!w) return showToast('El navegador bloqueó la ventana emergente', 'error');
+  w.document.write(`<!doctype html><html><head><title>Presupuesto AMCO</title>
+    <style>body{font-family:system-ui,sans-serif;padding:32px;color:#1a1a1e;max-width:640px;margin:0 auto}
+    table{width:100%;border-collapse:collapse}
+    .presup-doc__hdr{display:flex;justify-content:space-between;align-items:flex-start;border-bottom:2px solid #0e0e13;padding-bottom:12px}
+    @media print{@page{margin:18mm}}</style></head><body>${cont}</body></html>`);
+  w.document.close();
+  setTimeout(() => w.print(), 250);
+});
+
+document.getElementById('presupCopiar')?.addEventListener('click', () => {
+  const items = JSON.parse(document.getElementById('presupModal').dataset.items || '[]');
+  const total = Number(document.getElementById('presupModal').dataset.total || 0);
+  if (!items.length) return;
+  const ta = document.getElementById('pmHistorial');
+  const hoy = new Date().toLocaleDateString('es-AR');
+  const lineas = items.map(i => {
+    const donde = i.cara ? `Pieza ${i.pieza} (${i.cara})` : `Pieza ${i.pieza}`;
+    const precio = i.conPrecio ? ` — ${precioARS(i.precio)}` : '';
+    return `• ${donde}: ${i.nombre}${precio}`;
+  });
+  const bloque = `Presupuesto (${hoy}):\n` + lineas.join('\n') + `\nTotal estimado: ${precioARS(total)}`;
+  ta.value = ta.value.trim() ? ta.value.replace(/\s*$/, '') + '\n\n' + bloque : bloque;
+  cerrarPresupModal();
+  setFichaTab('plan');
+  showToast('Presupuesto copiado al plan de tratamiento', 'success');
+});
 
 /* ── Descargar copia de seguridad ── */
 document.getElementById('backupBtn')?.addEventListener('click', async () => {
@@ -1674,25 +1922,24 @@ document.getElementById('agregarTrabajoBtn')?.addEventListener('click', () => {
 });
 
 /* ── Plan: traer las prestaciones pendientes del odontograma ── */
-document.getElementById('planImportBtn')?.addEventListener('click', () => {
-  const od = State._odontograma || {};
-  const tipo = od._tipo || 'permanente';
-  const set = OD_TEETH[tipo] || OD_TEETH.permanente;
-  const lineas = [];
-  for (const num of [...set.top, ...set.bot]) {
-    for (const it of _odItemsDiente(num)) {
-      if (it.estado !== 'p') continue;                 // solo lo que falta hacer
-      lineas.push(`• Pieza ${num} — ${it.texto.replace(' — a realizar', '')}`);
-    }
-  }
-  if (!lineas.length) {
+document.getElementById('planImportBtn')?.addEventListener('click', async () => {
+  // Traigo el catálogo (silencioso) para usar los nombres actualizados y
+  // precios si están cargados. Si falla, funciono como antes.
+  await cargarCatalogoEnMemoria();
+  const items = _presupItems();
+  if (!items.length) {
     return showToast('No hay prestaciones marcadas como «a realizar» en el odontograma', 'default');
   }
+  const lineas = items.map(i => {
+    const donde  = i.cara ? `Pieza ${i.pieza} (${i.cara})` : `Pieza ${i.pieza}`;
+    const precio = i.conPrecio ? ` — ${precioARS(i.precio)}` : '';
+    return `• ${donde}: ${i.nombre}${precio}`;
+  });
   const ta = document.getElementById('pmHistorial');
   const bloque = `Prestaciones pendientes según odontograma (${new Date().toLocaleDateString('es-AR')}):\n` + lineas.join('\n');
-  // Se agrega al final: nunca sobrescribe lo que ya estaba escrito
+  // Siempre se agrega al final: nunca sobrescribe lo que ya estaba escrito
   ta.value = ta.value.trim() ? ta.value.replace(/\s*$/, '') + '\n\n' + bloque : bloque;
   ta.focus();
   ta.scrollTop = ta.scrollHeight;
-  showToast(`${lineas.length} prestación(es) agregadas al plan`, 'success');
+  showToast(`${items.length} prestación(es) agregadas al plan`, 'success');
 });

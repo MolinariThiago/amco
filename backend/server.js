@@ -184,7 +184,48 @@ async function initDB() {
         session_id  TEXT DEFAULT '',
         created_at  TIMESTAMPTZ DEFAULT NOW()
       );
+
+      -- Catálogo de prestaciones con precios. Solo se crea si no existe,
+      -- así el deploy es aditivo y no toca datos anteriores.
+      CREATE TABLE IF NOT EXISTS prestaciones (
+        id           SERIAL PRIMARY KEY,
+        codigo       TEXT UNIQUE NOT NULL,
+        nombre       TEXT NOT NULL,
+        precio       NUMERIC(12,2) DEFAULT 0,
+        activo       BOOLEAN DEFAULT TRUE,
+        created_at   TIMESTAMPTZ DEFAULT NOW(),
+        updated_at   TIMESTAMPTZ DEFAULT NOW()
+      );
     `);
+
+    // Sembrado inicial del catálogo. Se ejecuta UNA sola vez, cuando la
+    // tabla está vacía. Usa los mismos códigos que el odontograma para
+    // que los precios se puedan matchear automáticamente al generar el
+    // presupuesto. Los precios arrancan en 0 y los edita el admin.
+    const catCount = await client.query(`SELECT COUNT(*)::int AS c FROM prestaciones`);
+    if (catCount.rows[0].c === 0) {
+      const semilla = [
+        ['20','Caries'],                    ['21','Obturación composite'],
+        ['22','Obturación amalgama'],       ['23','Ionómero'],
+        ['24','Sellante'],                  ['25','Incrustación'],
+        ['26','Desgaste / abrasión'],       ['01','Pieza ausente'],
+        ['02','Extracción indicada'],       ['03','Pieza extraída'],
+        ['04','Implante'],                  ['05','Corona'],
+        ['06','Perno / muñón'],             ['07','Endodoncia'],
+        ['08','Prótesis fija'],             ['09','Prótesis removible'],
+        ['10','Resto radicular'],           ['11','Diente en erupción'],
+        ['12','Supernumerario'],            ['13','Fractura'],
+        ['14','Movilidad'],
+      ];
+      for (const [cod, nom] of semilla) {
+        await client.query(
+          `INSERT INTO prestaciones (codigo, nombre, precio) VALUES ($1, $2, 0)
+           ON CONFLICT (codigo) DO NOTHING`,
+          [cod, nom]
+        );
+      }
+      console.log(`📋 Catálogo de prestaciones sembrado con ${semilla.length} entradas (precios en 0)`);
+    }
 
     // Migración segura: agregar columnas nuevas a pacientes si no existen
     // (para bases de datos ya creadas antes de esta versión)
@@ -764,27 +805,117 @@ app.delete('/api/users/:username', auth, adminOnly, async (req, res) => {
   }
 });
 
+// ═════════════════════════════════════════════════
+//  PRESTACIONES (catálogo con precios)
+// ═════════════════════════════════════════════════
+
+// Cualquier usuario logueado puede LEER el catálogo (para armar el plan
+// desde la ficha), pero solo el admin puede modificarlo.
+
+app.get('/api/prestaciones', auth, async (req, res) => {
+  try {
+    const r = await pool.query(
+      `SELECT id, codigo, nombre, precio::float AS precio, activo,
+              created_at, updated_at
+       FROM prestaciones ORDER BY codigo`
+    );
+    res.json({ ok: true, data: r.rows });
+  } catch (err) {
+    console.error('GET /api/prestaciones error:', err);
+    res.status(500).json({ error: 'Error al leer el catálogo' });
+  }
+});
+
+app.post('/api/prestaciones', auth, adminOnly, async (req, res) => {
+  try {
+    const codigo = String(req.body.codigo || '').trim();
+    const nombre = String(req.body.nombre || '').trim();
+    const precio = Number(req.body.precio) || 0;
+    const activo = req.body.activo !== false;
+    if (!codigo || !nombre) return res.status(400).json({ error: 'Código y nombre son obligatorios' });
+    const r = await pool.query(
+      `INSERT INTO prestaciones (codigo, nombre, precio, activo)
+       VALUES ($1, $2, $3, $4) RETURNING id`,
+      [codigo, nombre, precio, activo]
+    );
+    res.status(201).json({ ok: true, id: r.rows[0].id });
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ error: 'Ya existe una prestación con ese código' });
+    console.error('POST /api/prestaciones error:', err);
+    res.status(500).json({ error: 'Error al guardar' });
+  }
+});
+
+app.patch('/api/prestaciones/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    const campos = { codigo:'codigo', nombre:'nombre', precio:'precio', activo:'activo' };
+    const updates = []; const params = []; let idx = 1;
+    for (const [k, col] of Object.entries(campos)) {
+      if (req.body[k] === undefined) continue;
+      let val = req.body[k];
+      if (col === 'precio') val = Number(val) || 0;
+      if (col === 'activo') val = !!val;
+      if (col === 'codigo' || col === 'nombre') val = String(val).trim();
+      updates.push(`${col} = $${idx++}`);
+      params.push(val);
+    }
+    if (!updates.length) return res.status(400).json({ error: 'Nada para actualizar' });
+    updates.push(`updated_at = NOW()`);
+    params.push(id);
+    const r = await pool.query(
+      `UPDATE prestaciones SET ${updates.join(', ')} WHERE id = $${idx} RETURNING id`, params
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'Prestación no encontrada' });
+    res.json({ ok: true });
+  } catch (err) {
+    if (err.code === '23505') return res.status(400).json({ error: 'Ya existe una prestación con ese código' });
+    console.error('PATCH /api/prestaciones error:', err);
+    res.status(500).json({ error: 'Error al guardar' });
+  }
+});
+
+app.delete('/api/prestaciones/:id', auth, adminOnly, async (req, res) => {
+  try {
+    const id = Number(req.params.id);
+    // Borrado suave: la marcamos como inactiva, así no rompemos referencias
+    // que pueda haber en presupuestos/planes ya guardados en texto.
+    const r = await pool.query(
+      `UPDATE prestaciones SET activo = FALSE, updated_at = NOW() WHERE id = $1 RETURNING id`,
+      [id]
+    );
+    if (!r.rows.length) return res.status(404).json({ error: 'Prestación no encontrada' });
+    res.json({ ok: true });
+  } catch (err) {
+    console.error('DELETE /api/prestaciones error:', err);
+    res.status(500).json({ error: 'Error al eliminar' });
+  }
+});
+
 // ── BACKUP: exporta todo en un JSON descargable ───
 //  Solo lectura: no modifica nada. No incluye contraseñas.
 app.get('/api/admin/backup', auth, adminOnly, async (req, res) => {
   try {
-    const [pacientes, turnos, usuarios] = await Promise.all([
+    const [pacientes, turnos, usuarios, prestaciones] = await Promise.all([
       pool.query(`SELECT * FROM pacientes ORDER BY id`),
       pool.query(`SELECT * FROM turnos ORDER BY id`),
       pool.query(`SELECT id, username, role, nombre, medico FROM users ORDER BY id`),
+      pool.query(`SELECT * FROM prestaciones ORDER BY codigo`).catch(() => ({ rows: [] })),
     ]);
     const dump = {
       _generado: new Date().toISOString(),
       _origen: 'AMCO Centro Odontológico',
       _nota: 'Backup de datos. No incluye contraseñas (los usuarios se recrean desde el panel).',
       _totales: {
-        pacientes: pacientes.rows.length,
-        turnos: turnos.rows.length,
-        usuarios: usuarios.rows.length,
+        pacientes:    pacientes.rows.length,
+        turnos:       turnos.rows.length,
+        usuarios:     usuarios.rows.length,
+        prestaciones: prestaciones.rows.length,
       },
-      pacientes: pacientes.rows,
-      turnos: turnos.rows,
-      usuarios: usuarios.rows,
+      pacientes:    pacientes.rows,
+      turnos:       turnos.rows,
+      usuarios:     usuarios.rows,
+      prestaciones: prestaciones.rows,
     };
     const fecha = new Date().toISOString().slice(0, 10);
     res.setHeader('Content-Type', 'application/json; charset=utf-8');
