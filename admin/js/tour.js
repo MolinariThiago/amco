@@ -17,6 +17,12 @@
       target: null,
     },
     {
+      titulo: 'La vista «Hoy»',
+      texto: 'Lo primero al entrar: la agenda del día lista para trabajar. Confirmá turnos, marcá quién fue atendido, cancelá, abrí la ficha del paciente y mandá recordatorios por WhatsApp con un clic. A la derecha, los turnos de mañana para avisarles con tiempo.',
+      target: '.sidebar__link[data-section="hoy"]',
+      seccion: 'hoy',
+    },
+    {
       titulo: 'Dashboard',
       texto: 'El resumen general: cuántos turnos activos hay, cuántos son hoy, los pendientes de confirmar y los últimos pedidos que entraron desde la web.',
       target: '.sidebar__link[data-section="dashboard"]',

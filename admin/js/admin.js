@@ -1,7 +1,7 @@
 'use strict';
 
 const SECTION_TITLES = {
-  dashboard:'Dashboard', turnos:'Turnos', eliminados:'Turnos eliminados',
+  hoy:'Hoy', dashboard:'Dashboard', turnos:'Turnos', eliminados:'Turnos eliminados',
   analytics:'Analítica', usuarios:'Usuarios', pacientes:'Pacientes',
   prestaciones:'Prestaciones', 'historial-hoy':'Historial del día'
 };
@@ -120,7 +120,7 @@ function initPanel() {
   document.body.classList.toggle('role-doctor', isDoctor);
   document.querySelectorAll('[data-admin-only]').forEach(el => { el.style.display = isDoctor ? 'none' : ''; });
   initSidebar(); initSidebarMobile();
-  navigateTo(isDoctor ? 'turnos' : 'dashboard');
+  navigateTo('hoy');
   document.getElementById('refreshBtn')?.addEventListener('click', ()=>{
     const btn=document.getElementById('refreshBtn');
     btn.classList.add('spinning');
@@ -158,6 +158,7 @@ function navigateTo(section) {
 
 async function loadCurrentSection() {
   switch(State.section) {
+    case 'hoy':           return loadHoy();
     case 'dashboard':     return loadDashboard();
     case 'turnos':        return loadTurnos();
     case 'eliminados':    return loadEliminados();
@@ -1696,6 +1697,20 @@ document.getElementById('ntSaveBtn')?.addEventListener('click', async () => {
   ntSetFieldError('ntHora',   hora   ? '' : 'Indicá la hora del turno');   if (!hora)   valid=false;
   if (!valid) return;
 
+  // Aviso de superposición: consulta los turnos reales de ese día y avisa
+  // si ya hay uno a la misma hora (y mismo médico, si está asignado).
+  // No bloquea — a veces el sobreturno es intencional — solo pide confirmación.
+  try {
+    const dia = await API.turnos({ from: fecha, to: fecha });
+    const choque = (dia.data || []).find(t =>
+      t.hora === hora && t.estado !== 'cancelado' &&
+      (!medico || !t.medico || t.medico === medico));
+    if (choque) {
+      const quien = choque.medico ? ` con ${medicoLabel(choque.medico)}` : '';
+      if (!confirm(`⚠️ Ya hay un turno el ${fecha.split('-').reverse().join('/')} a las ${hora}${quien}: ${choque.nombre}.\n\n¿Crear igual como sobreturno?`)) return;
+    }
+  } catch (_) { /* si falla la consulta, se sigue creando normalmente */ }
+
   const btn = document.getElementById('ntSaveBtn');
   btn.disabled = true;
   btn.innerHTML = '<span class="btn-spinner"></span> Guardando…';
@@ -1713,6 +1728,130 @@ document.getElementById('ntSaveBtn')?.addEventListener('click', async () => {
     btn.innerHTML = '✓ Crear turno';
   }
 });
+
+/* ══════════════════════════════════════════════════
+   HOY — agenda operativa del día para la secretaria
+   Solo usa endpoints existentes (GET/PATCH turnos):
+   no toca la base más allá de cambiar estados.
+══════════════════════════════════════════════════ */
+
+function fechaLocalISO(offsetDias = 0) {
+  const d = new Date(Date.now() + offsetDias * 86400000);
+  // toLocaleDateString('en-CA') da YYYY-MM-DD en horario local
+  return d.toLocaleDateString('en-CA');
+}
+
+function fechaLarga(iso) {
+  const [y, m, dd] = iso.split('-').map(Number);
+  return new Date(y, m - 1, dd).toLocaleDateString('es-AR', { weekday:'long', day:'numeric', month:'long' });
+}
+
+// Teléfono argentino → formato wa.me (igual criterio que el backend)
+function telWhatsApp(tel) {
+  let d = String(tel || '').replace(/\D/g, '');
+  if (!d) return null;
+  if (d.startsWith('549')) return d;
+  if (d.startsWith('54'))  return '549' + d.slice(2);
+  if (d.startsWith('0'))   d = d.slice(1);
+  if (d.length < 8)        return null;
+  return '549' + d;
+}
+
+async function loadHoy() {
+  const hoy    = fechaLocalISO(0);
+  const manana = fechaLocalISO(1);
+  const elHoyFecha = document.getElementById('hoyFecha');
+  const elMabFecha = document.getElementById('mananaFecha');
+  if (elHoyFecha) elHoyFecha.textContent = fechaLarga(hoy);
+  if (elMabFecha) elMabFecha.textContent = fechaLarga(manana);
+  try {
+    const res = await API.turnos({ from: hoy, to: manana });
+    const todos = res.data || [];
+    State._turnosHoy = todos;                       // cache para las acciones
+    const deHoy    = todos.filter(t => t.fecha === hoy).sort((a,b) => (a.hora||'').localeCompare(b.hora||''));
+    const deManana = todos.filter(t => t.fecha === manana).sort((a,b) => (a.hora||'').localeCompare(b.hora||''));
+    _renderHoyLista('hoyLista',    'hoyCount',    deHoy,    false);
+    _renderHoyLista('mananaLista', 'mananaCount', deManana, true);
+  } catch (err) {
+    showToast('Error: ' + err.message, 'error');
+  }
+}
+
+function _renderHoyLista(contId, countId, turnos, esManana) {
+  const cont = document.getElementById(contId);
+  const cnt  = document.getElementById(countId);
+  if (cnt) cnt.textContent = turnos.length;
+  if (!cont) return;
+  if (!turnos.length) {
+    cont.innerHTML = `<div class="hoy-vacio">${esManana ? 'Sin turnos agendados para mañana.' : 'Sin turnos para hoy. 🎉'}</div>`;
+    return;
+  }
+  cont.innerHTML = turnos.map(t => {
+    const wa   = telWhatsApp(t.telefono);
+    const tel  = String(t.telefono || '').trim();
+    const acciones = [];
+    if (t.estado === 'pendiente') {
+      acciones.push(`<button class="hoy-btn hoy-btn--ok" onclick="hoyEstado(${t.id},'confirmado')" title="Marcar confirmado">✓ Confirmar</button>`);
+    }
+    if (!esManana && (t.estado === 'confirmado' || t.estado === 'pendiente')) {
+      acciones.push(`<button class="hoy-btn hoy-btn--done" onclick="hoyEstado(${t.id},'completado')" title="El paciente fue atendido">✔ Atendido</button>`);
+    }
+    if (wa && t.estado !== 'cancelado' && t.estado !== 'completado') {
+      acciones.push(`<a class="hoy-btn hoy-btn--wa" href="${_hoyLinkWa(t, esManana, wa)}" target="_blank" rel="noopener" title="Enviar recordatorio por WhatsApp">📲 Recordar</a>`);
+    }
+    acciones.push(`<button class="hoy-btn" onclick="hoyFicha(${t.id})" title="Abrir ficha clínica">📄 Ficha</button>`);
+    if (t.estado !== 'cancelado' && t.estado !== 'completado') {
+      acciones.push(`<button class="hoy-btn hoy-btn--x" onclick="hoyEstado(${t.id},'cancelado')" title="Cancelar el turno">✗</button>`);
+    }
+    return `<div class="hoy-card hoy-card--${t.estado}">
+      <div class="hoy-card__hora">${escHtml(t.hora || '—')}</div>
+      <div class="hoy-card__info">
+        <strong>${escHtml(t.nombre)}</strong>
+        <span>${escHtml(t.servicio || 'Consulta')}${t.medico ? ' · ' + escHtml(medicoLabel(t.medico)) : ''}</span>
+        ${tel ? `<span class="hoy-card__tel">📞 <a href="tel:${escHtml(tel)}">${escHtml(tel)}</a></span>` : '<span class="hoy-card__tel hoy-card__tel--falta">sin teléfono</span>'}
+      </div>
+      <div class="hoy-card__estado">${badgeHtml(t.estado)}</div>
+      <div class="hoy-card__acciones">${acciones.join('')}</div>
+    </div>`;
+  }).join('');
+}
+
+function _hoyLinkWa(t, esManana, wa) {
+  const [y, m, d] = (t.fecha || '').split('-');
+  const cuando = esManana ? `mañana ${d}/${m}` : `hoy`;
+  const primerNombre = (t.nombre || '').split(' ')[0];
+  const msj = `🦷 *AMCO · Centro Odontológico*\n\nHola ${primerNombre}! Te recordamos tu turno de ${cuando} a las *${t.hora} hs*` +
+    (t.servicio ? ` (${t.servicio})` : '') +
+    `.\n\nSi no podés asistir, avisanos por este medio así reprogramamos. ¡Te esperamos!\n📍 Hipólito Yrigoyen 1293, Concordia`;
+  return `https://wa.me/${wa}?text=${encodeURIComponent(msj)}`;
+}
+
+window.hoyEstado = async function(id, estado) {
+  if (estado === 'cancelado' && !confirm('¿Cancelar este turno?')) return;
+  try {
+    await API.patch(id, { estado });
+    showToast(estado === 'confirmado' ? 'Turno confirmado ✓'
+            : estado === 'completado' ? 'Paciente atendido ✔'
+            : 'Turno cancelado', estado === 'cancelado' ? 'default' : 'success');
+    loadHoy();
+  } catch (err) { showToast('Error: ' + err.message, 'error'); }
+};
+
+window.hoyFicha = async function(id) {
+  const t = (State._turnosHoy || []).find(x => x.id === id);
+  if (!t) return;
+  try {
+    if (!State.pacientes || !State.pacientes.length) {
+      const r = await API.getPacientes();
+      State.pacientes = r.data || [];
+    }
+    const p = State.pacientes.find(x =>
+      x.nombre.toLowerCase() === t.nombre.toLowerCase() ||
+      (t.email && x.email && x.email.toLowerCase() === t.email.toLowerCase()));
+    if (p) openPacienteModal(p.id);
+    else showToast('Este turno no tiene ficha de paciente asociada todavía', 'default');
+  } catch (err) { showToast('Error: ' + err.message, 'error'); }
+};
 
 /* ══════════════════════════════════════════════════
    HISTORIAL DEL DÍA

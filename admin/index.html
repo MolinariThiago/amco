@@ -47,6 +47,10 @@
       <span class="sidebar__sub">Admin</span>
     </div>
     <nav class="sidebar__nav">
+      <a href="#" class="sidebar__link" data-section="hoy">
+        <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>
+        Hoy
+      </a>
       <a href="#" class="sidebar__link active" data-section="dashboard" data-admin-only>
         <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/></svg>
         Dashboard
@@ -114,6 +118,32 @@
         </a>
       </div>
     </header>
+
+    <!-- ═══ HOY (agenda operativa del día) ═══ -->
+    <section id="section-hoy" class="admin-section" style="display:none">
+      <div class="hoy-grid">
+        <div class="hoy-col">
+          <div class="hoy-col__head">
+            <h3>🦷 Turnos de hoy</h3>
+            <span class="hoy-count" id="hoyCount">—</span>
+          </div>
+          <p class="hoy-fecha" id="hoyFecha"></p>
+          <div class="hoy-lista" id="hoyLista">
+            <div class="table-loading" style="padding:30px;text-align:center">Cargando…</div>
+          </div>
+        </div>
+        <div class="hoy-col">
+          <div class="hoy-col__head">
+            <h3>📆 Mañana</h3>
+            <span class="hoy-count" id="mananaCount">—</span>
+          </div>
+          <p class="hoy-fecha" id="mananaFecha"></p>
+          <div class="hoy-lista" id="mananaLista">
+            <div class="table-loading" style="padding:30px;text-align:center">Cargando…</div>
+          </div>
+        </div>
+      </div>
+    </section>
 
     <!-- ═══ DASHBOARD ═══ -->
     <section id="section-dashboard" class="admin-section">
