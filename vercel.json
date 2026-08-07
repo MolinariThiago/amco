@@ -22,16 +22,11 @@
       }
     },
     {
-      "src": "/admin/css/(.*)",
-      "dest": "/admin/css/$1"
-    },
-    {
-      "src": "/admin/js/(.*)",
-      "dest": "/admin/js/$1"
-    },
-    {
       "src": "/admin(.*)",
-      "dest": "/admin/index.html"
+      "status": 302,
+      "headers": {
+        "Location": "https://molaris-production-be0c.up.railway.app/admin$1"
+      }
     },
     {
       "src": "/(.*)",
