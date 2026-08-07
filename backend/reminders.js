@@ -29,6 +29,18 @@ const HORA_ENVIO_DIA  = Number(process.env.REMINDER_HORA_DIA || 8);  // recordat
 const EMAIL_ON = !!RESEND_API_KEY;
 const WA_ON    = !!(WA_TOKEN && WA_PHONE_ID);
 
+// Los pacientes se cargan como «Apellido, Nombre», así que partir por el
+// espacio devolvía el apellido con la coma pegada: «Hola Arias,!». Sirve para
+// los dos órdenes — «Arias, María» y «María Arias» — porque los turnos que
+// entran por el formulario público vienen con el nombre como lo escribe el
+// paciente.
+function primerNombre(completo) {
+  const n = String(completo || '').trim();
+  if (!n) return '';
+  const trasComa = n.includes(',') ? n.slice(n.indexOf(',') + 1).trim() : n;
+  return (trasComa.split(/\s+/)[0] || '').replace(/,$/, '');
+}
+
 // ── Fecha/hora de Argentina (UTC-3, sin horario de verano) ──
 function ahoraArg() {
   return new Date(Date.now() - 3 * 3600 * 1000);
@@ -73,7 +85,7 @@ async function enviarEmail(turno, esMismoDia) {
         <div style="color:#C9A96E;font-size:11px;letter-spacing:2px;margin-top:4px">CENTRO ODONTOL&Oacute;GICO</div>
       </div>
       <div style="padding:28px;color:#1A1A1E">
-        <p style="font-size:16px;margin:0 0 14px">Hola <strong>${(turno.nombre || '').split(' ')[0]}</strong> 👋</p>
+        <p style="font-size:16px;margin:0 0 14px">Hola <strong>${primerNombre(turno.nombre)}</strong> 👋</p>
         <p style="font-size:14px;margin:0 0 18px">Te recordamos que <strong>${cuando}</strong> ten&eacute;s un turno con nosotros:</p>
         <div style="background:#FAFAFA;border:1px solid #e6e6eb;border-radius:10px;padding:16px 20px;margin-bottom:18px">
           <p style="margin:4px 0;font-size:14px">📅 <strong>${fecha}</strong></p>
@@ -121,7 +133,7 @@ async function enviarWhatsApp(turno, esMismoDia) {
         components: [{
           type: 'body',
           parameters: [
-            { type: 'text', text: (turno.nombre || '').split(' ')[0] || 'paciente' },
+            { type: 'text', text: primerNombre(turno.nombre) || 'paciente' },
             { type: 'text', text: cuando },
             { type: 'text', text: `${turno.hora} hs` },
           ],

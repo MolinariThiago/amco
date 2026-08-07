@@ -1819,11 +1819,20 @@ function _renderHoyLista(contId, countId, turnos, esManana) {
 function _hoyLinkWa(t, esManana, wa) {
   const [y, m, d] = (t.fecha || '').split('-');
   const cuando = esManana ? `mañana ${d}/${m}` : `hoy`;
-  const primerNombre = (t.nombre || '').split(' ')[0];
+  // «Apellido, Nombre»: partir por el espacio daba «Hola Arias,!». Contempla
+  // los dos órdenes, porque los turnos del formulario público traen el nombre
+  // como lo escribió el paciente.
+  const n = String(t.nombre || '').trim();
+  const trasComa = n.includes(',') ? n.slice(n.indexOf(',') + 1).trim() : n;
+  const primerNombre = (trasComa.split(/\s+/)[0] || '').replace(/,$/, '');
   const msj = `🦷 *AMCO · Centro Odontológico*\n\nHola ${primerNombre}! Te recordamos tu turno de ${cuando} a las *${t.hora} hs*` +
     (t.servicio ? ` (${t.servicio})` : '') +
     `.\n\nSi no podés asistir, avisanos por este medio así reprogramamos. ¡Te esperamos!\n📍 Hipólito Yrigoyen 1293, Concordia`;
-  return `https://wa.me/${wa}?text=${encodeURIComponent(msj)}`;
+  // WhatsApp Web y no wa.me: en la computadora del consultorio no se puede
+  // actualizar la aplicación de escritorio, y wa.me intenta abrirla igual —
+  // al no encontrarla ofrece descargarla en vez de abrir el chat, así que el
+  // botón «Recordar» no hacía nada. web.whatsapp.com abre el chat directo.
+  return `https://web.whatsapp.com/send?phone=${wa}&text=${encodeURIComponent(msj)}`;
 }
 
 window.hoyEstado = async function(id, estado) {
